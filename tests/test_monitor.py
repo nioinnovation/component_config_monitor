@@ -4,7 +4,8 @@ from niocore.core.context import CoreContext
 from niocore.core.hooks import CoreHooks
 from nio.modules.web import RESTHandler
 from niocore.testing.fast_tests import sleeping_test
-from niocore.components.config_monitor.monitor import ConfigMonitor
+
+from ..monitor import ConfigMonitor
 
 
 # noinspection PyProtectedMember
