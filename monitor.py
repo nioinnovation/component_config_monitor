@@ -5,7 +5,7 @@
 """
 from nio.util.versioning.dependency import DependsOn
 from niocore.configuration import CfgType
-from nio.modules.security.decorator import protected_access
+from nio.modules.security.access import ensure_access
 from niocore.core.component import CoreComponent
 from niocore.core.hooks import CoreHooks
 from nio.modules.web import RESTHandler
@@ -24,7 +24,6 @@ class ConfigMonitorHandler(RESTHandler):
         self._callback = callback
         self.logger = logger
 
-    @protected_access("config.refresh")
     def on_get(self, request, response, *args, **kwargs):
         """ API endpoint to refresh current configuration
 
@@ -32,6 +31,9 @@ class ConfigMonitorHandler(RESTHandler):
             http://[host]:[port]/config/refresh
 
         """
+        # Ensure instance "execute" access in order to refresh project's config
+        ensure_access("instance", "execute")
+
         params = request.get_params()
         self.logger.debug("on_get, params: {0}".format(params))
 
