@@ -1,11 +1,12 @@
-# nio config monitor component
+# nio configuration  component
 
-A nio component providing functionality to monitor configuration files
+A nio component providing functionality to update and/or refresh configuration files
 
 
 ## Configuration
 
-- None
+- product_api_url_prefix: indicates the prefix url to use when requesting a configuration from the Product API
+- instance_id: indicates the instance identifier to use when requesting a configuration from the Product API
 
 
 ## Dependencies

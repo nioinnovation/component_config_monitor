@@ -4,7 +4,7 @@ from nio.modules.security import Authorizer, Unauthorized
 from nio.modules.web.http import Request, Response
 from nio.testing.test_case import NIOTestCase
 
-from ..monitor import ConfigMonitorHandler
+from ..manager import ConfigHandler
 
 
 class TestAccess(NIOTestCase):
@@ -12,7 +12,7 @@ class TestAccess(NIOTestCase):
     def test_access(self):
         """ Asserts that API handlers are protected.
         """
-        handler = ConfigMonitorHandler(None, None)
+        handler = ConfigHandler(None, None)
         with patch.object(Authorizer, "authorize",
                           side_effect=Unauthorized) as patched_authorize:
 
