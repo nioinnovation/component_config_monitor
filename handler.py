@@ -4,9 +4,10 @@
 
 """
 from nio.util.logging import get_nio_logger
-from niocore.configuration import CfgType, Configuration
+from niocore.configuration import CfgType
 from nio.modules.security.access import ensure_access
 from niocore.configuration.service import ServiceConfiguration
+from niocore.configuration.block import BlockConfiguration
 from niocore.core.hooks import CoreHooks
 from nio.modules.web import RESTHandler
 from .proxy import ConfigurationProxy
@@ -60,7 +61,7 @@ class ConfigHandler(RESTHandler):
 
             # update configurations
             self._update_configuration(
-                "blocks", Configuration, url, token
+                "blocks", BlockConfiguration, url, token
             )
             self._trigger_config_change_hook(CfgType.block)
 
