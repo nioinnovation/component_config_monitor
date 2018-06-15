@@ -7,6 +7,9 @@ from nio.util.versioning.dependency import DependsOn
 from nio import discoverable
 from nio.modules.settings import Settings
 
+from nio.modules.persistence import Persistence
+from niocore.util.environment import NIOEnvironment
+
 from niocore.core.component import CoreComponent
 
 from .handler import ConfigHandler
@@ -46,9 +49,12 @@ class ConfigManager(CoreComponent):
         product_api_url_prefix = \
             Settings.get("configuration", "product_api_url_prefix",
                          fallback="https://api.nio.works/v1")
+        default = NIOEnvironment.get_variable('API_KEY', default=None)
+        instance_api_key = Persistence().load("api_key", default=default)
         instance_id = Settings.get("configuration", "instance_id")
 
         self._config_handler = ConfigHandler(product_api_url_prefix,
+                                             instance_api_key,
                                              instance_id)
 
     def start(self):

@@ -14,12 +14,8 @@ class TestProxy(NIOTestCase):
         proxy = ConfigurationProxy()
         with patch("{}.requests".format(ConfigurationProxy.__module__)) \
                 as request_patch:
-            proxy.load_collection("name", "url", "token")
-            payload = urlencode({
-                "collection": "name"
-            })
-            headers = proxy._get_headers("token")
+            proxy.load_configuration("url", "token", "org_id")
+            headers = proxy._get_headers("token", "org_id")
 
             request_patch.get.assert_called_with("url",
-                                                 params=payload,
                                                  headers=headers)

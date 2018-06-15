@@ -6,7 +6,6 @@ from niocore.core.hooks import CoreHooks
 
 from ..handler import ConfigHandler
 
-
 # noinspection PyProtectedMember
 from nio.testing.test_case import NIOTestCase
 
@@ -21,7 +20,8 @@ class TestConfigHandler(NIOTestCase):
 
         url_prefix = "url_prefix"
         instance_id = "instance_id"
-        handler = ConfigHandler(url_prefix, instance_id)
+        api_key = "api_key"
+        handler = ConfigHandler(url_prefix, instance_id, api_key)
         handler._trigger_config_change_hook(CfgType.all)
 
         # handle async hook execution
