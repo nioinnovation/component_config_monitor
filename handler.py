@@ -89,7 +89,7 @@ class ConfigHandler(RESTHandler):
 
 
         # get and update configuration
-        self._update_configuration(all, Configuration, url, token)
+        self._update_configuration(all, Configuration, url, token, org_id)
         self._trigger_config_change_hook(CfgType.all)
 
         return
@@ -102,7 +102,7 @@ class ConfigHandler(RESTHandler):
         # erase any existing data under this configuration
         configuration.clear()
 
-        # load new config data and save
+        load new config data and save
         configuration.data = \
             self._proxy.load_configuration(url, token, org_id) or {}
         configuration.save()
