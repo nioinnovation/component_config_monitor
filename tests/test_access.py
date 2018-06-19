@@ -18,5 +18,6 @@ class TestAccess(NIOTestCase):
 
             with self.assertRaises(Unauthorized):
                 handler.on_get(Mock(spec=Request), Mock(spec=Response))
+                handler.on_put(Mock(spec=Request), Mock(spec=Response))
 
             self.assertEqual(patched_authorize.call_count, 1)

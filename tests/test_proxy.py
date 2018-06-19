@@ -17,5 +17,12 @@ class TestProxy(NIOTestCase):
             proxy.load_configuration("url", "token", "org_id")
             headers = proxy._get_headers("token", "org_id")
 
+            test_headers = {
+                "authorization": "bearer token", 
+                "nio-organization": "org_id",
+                "content-type": "application/json"
+            }
+            self.assertEqual(headers, test_headers)
+
             request_patch.get.assert_called_with("url",
                                                  headers=headers)
