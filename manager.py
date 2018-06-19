@@ -49,8 +49,8 @@ class ConfigManager(CoreComponent):
         product_api_url_prefix = \
             Settings.get("configuration", "product_api_url_prefix",
                          fallback="https://api.nio.works/v1")
-        default = NIOEnvironment.get_variable('API_KEY', default=None)
-        instance_api_key = Persistence().load("api_key", default=default)
+        default = Persistence().load("api_key", default=None)
+        instance_api_key = NIOEnvironment.get_variable('API_KEY', default=default)
         instance_id = Settings.get("configuration", "instance_id")
 
         self._config_handler = ConfigHandler(product_api_url_prefix,

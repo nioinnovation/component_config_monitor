@@ -39,7 +39,7 @@ class ConfigHandler(RESTHandler):
         params = request.get_params()
         self.logger.debug("on_get, params: {0}".format(params))
 
-        if not params.get('identifier', '') == 'refresh':
+        if params.get('identifier', '') != 'refresh':
              msg = "Invalid parameters: {0} in 'config': {0}".format(params)
              self.logger.warning(msg)
              raise ValueError(msg)
@@ -67,7 +67,7 @@ class ConfigHandler(RESTHandler):
         params = request.get_params()
         self.logger.debug("on_put, params: {0}".format(params))
 
-        if not params.get('identifier', '') == 'update':
+        if params.get('identifier', '') != 'update':
              msg = "Invalid parameters: {0} in 'config': {0}".format(params)
              self.logger.warning(msg)
              raise ValueError(msg)
