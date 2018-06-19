@@ -28,6 +28,10 @@ class ConfigManager(CoreComponent):
         self._rest_manager = None
         self._config_handler = None
 
+        self._product_api_url_prefix = None
+        self._instance_api_key = None
+        self._instance_id = None
+
     def configure(self, context):
         """ Configures component
 
@@ -46,16 +50,17 @@ class ConfigManager(CoreComponent):
         self.logger.info('REST Manager set to {}'.format(self._rest_manager))
 
         # fetch component settings
-        product_api_url_prefix = \
+        self._product_api_url_prefix = \
             Settings.get("configuration", "product_api_url_prefix",
                          fallback="https://api.nio.works/v1")
-        default = Persistence().load("api_key", default=None)
-        instance_api_key = NIOEnvironment.get_variable('API_KEY', default=default)
-        instance_id = Settings.get("configuration", "instance_id")
 
-        self._config_handler = ConfigHandler(product_api_url_prefix,
-                                             instance_api_key,
-                                             instance_id)
+        default = Persistence().load("api_key", default=None)
+        self._instance_api_key = \
+            NIOEnvironment.get_variable('API_KEY', default=default)
+
+        self._instance_id = Settings.get("configuration", "instance_id")
+       
+        # TODO in NIO-1141: Pull config settings for autonomy
 
     def start(self):
         """ Starts component
@@ -63,4 +68,17 @@ class ConfigManager(CoreComponent):
         Register a REST handler that handles configuration updates
         """
         super().start()
+        self._config_handler = ConfigHandler(self._product_api_url_prefix,
+                                             self._instance_api_key,
+                                             self._instance_id)
+
         self._rest_manager.add_web_handler(self._config_handler)
+
+    def stop(self):
+        """ Stops component
+        """
+        self._rest_manager.remove_web_handler(self._config_handler)
+        
+        # TODO in NIO-1141: Persist instance config id, instance config version id
+        
+        super().stop()
