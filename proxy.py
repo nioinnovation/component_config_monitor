@@ -12,7 +12,7 @@ class ConfigurationProxy(object):
         super().__init__()
         self.logger = get_nio_logger("ConfigurationProxy")
 
-    def load_configuration(self, url, token, org_id):
+    def load_configuration(self, url, apikey):
         """ 
         Retrieves an instance configruation by a instance_configuration_id 
         and a instance_configuration_version_id
@@ -21,7 +21,7 @@ class ConfigurationProxy(object):
         try:
             response = requests.get(
                 url,
-                headers=self._get_headers(token, org_id)
+                headers=self._get_headers(apikey)
             )
             if response.ok:
                 return response.json()
@@ -29,9 +29,8 @@ class ConfigurationProxy(object):
             self.logger.exception("Failed to load configuration")
 
     @staticmethod
-    def _get_headers(token, org_id):
+    def _get_headers(apikey):
         return {
-            "authorization": "bearer {}".format(token), 
-            "nio-organization": org_id,
+            "authorization": "apikey {}".format(apikey),
             "content-type": "application/json"
         }

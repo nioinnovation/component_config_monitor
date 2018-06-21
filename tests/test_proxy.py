@@ -14,12 +14,11 @@ class TestProxy(NIOTestCase):
         proxy = ConfigurationProxy()
         with patch("{}.requests".format(ConfigurationProxy.__module__)) \
                 as request_patch:
-            proxy.load_configuration("url", "token", "org_id")
-            headers = proxy._get_headers("token", "org_id")
+            proxy.load_configuration("url", "token")
+            headers = proxy._get_headers("token")
 
             test_headers = {
-                "authorization": "bearer token", 
-                "nio-organization": "org_id",
+                "authorization": "apikey token",
                 "content-type": "application/json"
             }
             self.assertEqual(headers, test_headers)

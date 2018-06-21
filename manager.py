@@ -13,6 +13,7 @@ from niocore.util.environment import NIOEnvironment
 from niocore.core.component import CoreComponent
 
 from .handler import ConfigHandler
+from . import __version__ as component_version
 
 
 @DependsOn('niocore.components.rest')

@@ -65,46 +65,56 @@ class ConfigHandler(RESTHandler):
         ensure_access("instance", "execute")
 
         params = request.get_params()
-        self.logger.debug("on_put, params: {0}".format(params))
+        self.logger.debug("on_put, params: {}".format(params))
 
-        if params.get('identifier', '') != 'update':
+        if request.get_identifier() != 'update':
              msg = "Invalid parameters: {0} in 'config': {0}".format(params)
              self.logger.warning(msg)
              raise ValueError(msg)
 
-        token = params.get('token', self._instance_api_key)
+        body = request.get_body()
+        self.logger.debug("on_put, body: {}".format(body))
 
         # allow to override gathered settings
-        url_prefix = params.get('url', self._product_api_url_prefix)
-        instance_configuration_id = params.get('instance_configuration_id', None)
+        url_prefix = body.get('url', self._product_api_url_prefix)
+        instance_configuration_id = body.get('instance_configuration_id', None)
         instance_configuration_version_id =\
-            params.get('instance_configuration_version_id', None)
+            body.get('instance_configuration_version_id', None)
 
-        org_id = params.get('nio-organization', None)
+        if instance_configuration_id is None:
+            msg = "Invalid body: Body must contain an instance_configuration_id"
+            self.logger.warning(msg)
+            raise ValueError(msg)
+
+        elif instance_configuration_version_id is None:
+            msg = "Invalid body: Body must contain an instance_configuration_version_id"
+            self.logger.warning(msg)
+            raise ValueError(msg)
 
         url = "{}/instance_configurations/{}/versions/{}"\
             .format(url_prefix,
                     instance_configuration_id,
                     instance_configuration_version_id)
 
-
-        # get and update configuration
-        self._update_configuration(all, Configuration, url, token, org_id)
+        # get configuration and update running instance
+        self._update_configuration(all,
+                                   Configuration,
+                                   url,
+                                   self._instance_api_key)
         self._trigger_config_change_hook(CfgType.all)
 
         return
 
-    def _update_configuration(self, name, conf_class, url, token, org_id):
+    def _update_configuration(self, name, conf_class, url, apikey):
         configuration = conf_class(name,
                                    fetch_on_create=False,
                                    is_collection=True,
                                    substitute=False)
         # erase any existing data under this configuration
         configuration.clear()
-
         # load new config data and save
         configuration.data = \
-            self._proxy.load_configuration(url, token, org_id) or {}
+            self._proxy.load_configuration(url, apikey) or {}
         configuration.save()
 
     def _trigger_config_change_hook(self, cfg_type):
