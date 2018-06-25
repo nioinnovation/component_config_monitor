@@ -12,7 +12,7 @@ from nio.testing.test_case import NIOTestCase
 
 class TestConfigManager(NIOTestCase):
 
-    def test_start(self):
+    def test_start_stop(self):
         # Test a handler is created and passed to REST Manager on start
 
         rest_manager = MagicMock()
@@ -26,8 +26,10 @@ class TestConfigManager(NIOTestCase):
             manager.configure(context)
 
         manager.start()
-        rest_manager.add_web_handler.assert_called_with(ANY)
+        rest_manager.add_web_handler.assert_called_with(manager._config_handler)
         self.assertEqual(2, len(rest_manager.add_web_handler.call_args))
         self.assertTrue(
             isinstance(rest_manager.add_web_handler.call_args[0][0],
                        RESTHandler))
+        manager.stop()
+        rest_manager.remove_web_handler.assert_called_with(manager._config_handler)
