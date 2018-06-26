@@ -4,13 +4,13 @@ from urllib.parse import urlencode
 from nio.util.logging import get_nio_logger
 
 
-class ConfigurationProxy(object):
+class ConfigProxy(object):
     """ Serves as a Proxy to make Product API configuration requests
     """
 
     def __init__(self):
         super().__init__()
-        self.logger = get_nio_logger("ConfigurationProxy")
+        self.logger = get_nio_logger("ConfigProxy")
 
     def load_configuration(self, url, apikey):
         """ 
