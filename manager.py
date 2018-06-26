@@ -31,6 +31,10 @@ class ConfigManager(CoreComponent):
         self._instance_api_key = None
         self._instance_id = None
 
+        self._configuration_manager = None
+        self._start_stop_services = None
+        self._delete_missing = None
+
     def configure(self, context):
         """ Configures component
 
@@ -46,6 +50,8 @@ class ConfigManager(CoreComponent):
 
         # Register dependency to rest manager
         self._rest_manager = self.get_dependency('RESTManager')
+        self._configuration_manager = \
+            self.get_dependency('ConfigurationManager')
         self.logger.info('REST Manager set to {}'.format(self._rest_manager))
 
         # fetch component settings
@@ -59,6 +65,11 @@ class ConfigManager(CoreComponent):
 
         self._instance_id = Settings.get("configuration", "instance_id")
        
+        self._start_stop_services = Settings.getboolean(
+            "configuration", "start_stop_services", fallback=True)
+        self._delete_missing = Settings.getboolean(
+            "configuration", "delete_missing", fallback=False)
+
         # TODO in NIO-1141: Pull config settings for autonomy
 
     def start(self):
@@ -69,7 +80,10 @@ class ConfigManager(CoreComponent):
         super().start()
         self._config_handler = ConfigHandler(self._product_api_url_prefix,
                                              self._instance_api_key,
-                                             self._instance_id)
+                                             self._instance_id,
+                                             self._configuration_manager,
+                                             self._start_stop_services,
+                                             self._delete_missing)
 
         self._rest_manager.add_web_handler(self._config_handler)
 

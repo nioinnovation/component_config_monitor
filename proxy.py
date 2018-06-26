@@ -1,5 +1,4 @@
 import requests
-from urllib.parse import urlencode
 
 from nio.util.logging import get_nio_logger
 
@@ -16,6 +15,19 @@ class ConfigurationProxy(object):
         """ 
         Retrieves an instance configruation by a instance_configuration_id 
         and a instance_configuration_version_id
+
+        Returns: configuration with format
+            {
+                "configuration_data": {
+                    "version": 1.0.0,
+                    "blocks": {...},
+                    "services": {...},
+                },
+                "message": "Found Instance Configuration...",
+                "status": 200,
+                "uuid": "uuid..",
+                "version_num": "v1.0.0"
+            }
         """
         
         try:

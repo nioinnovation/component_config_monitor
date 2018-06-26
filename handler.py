@@ -3,10 +3,11 @@
    Configuration Handler
 
 """
+import json
+
 from nio.util.logging import get_nio_logger
 from niocore.configuration import CfgType
 from nio.modules.security.access import ensure_access
-from niocore.configuration.configuration import Configuration
 from niocore.core.hooks import CoreHooks
 from nio.modules.web import RESTHandler
 from .proxy import ConfigurationProxy
@@ -17,13 +18,17 @@ class ConfigHandler(RESTHandler):
     """ Handler for config component
     """
 
-    def __init__(self, product_api_url_prefix, instance_api_key, instance_id):
+    def __init__(self, product_api_url_prefix, instance_api_key, instance_id,
+                 configuration_manager, start_stop_services, delete_missing):
         super().__init__('/config/')
 
         self.logger = get_nio_logger("ConfigHandler")
         self._product_api_url_prefix = product_api_url_prefix
         self._instance_api_key = instance_api_key
         self._instance_id = instance_id
+        self._configuration_manager = configuration_manager
+        self._start_stop_services = start_stop_services
+        self._delete_missing = delete_missing
         self._proxy = ConfigurationProxy()
 
     def on_get(self, request, response, *args, **kwargs):
@@ -87,7 +92,8 @@ class ConfigHandler(RESTHandler):
             raise ValueError(msg)
 
         elif instance_configuration_version_id is None:
-            msg = "Invalid body: Body must contain an instance_configuration_version_id"
+            msg = "Invalid body: " \
+                  "Body must contain an instance_configuration_version_id"
             self.logger.warning(msg)
             raise ValueError(msg)
 
@@ -97,25 +103,24 @@ class ConfigHandler(RESTHandler):
                     instance_configuration_version_id)
 
         # get configuration and update running instance
-        self._update_configuration(all,
-                                   Configuration,
-                                   url,
-                                   self._instance_api_key)
-        self._trigger_config_change_hook(CfgType.all)
+        result = self._update_configuration( url, self._instance_api_key)
+        # provide response
+        response.set_header('Content-Type', 'application/json')
+        response.set_body(json.dumps(result))
 
-        return
+    def _update_configuration(self, url, apikey):
 
-    def _update_configuration(self, name, conf_class, url, apikey):
-        configuration = conf_class(name,
-                                   fetch_on_create=False,
-                                   is_collection=True,
-                                   substitute=False)
-        # erase any existing data under this configuration
-        configuration.clear()
-        # load new config data and save
-        configuration.data = \
-            self._proxy.load_configuration(url, apikey) or {}
-        configuration.save()
+        configuration = self._proxy.load_configuration(url, apikey) or {}
+        if "configuration_data" not in configuration:
+            msg = "configuration_data entry missing in nio API return"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+
+        configuration_data = configuration["configuration_data"]
+        services = configuration_data.get("services", {})
+        blocks = configuration_data.get("blocks", {})
+        return self._configuration_manager.update(
+            services, blocks, self._start_stop_services, self._delete_missing)
 
     def _trigger_config_change_hook(self, cfg_type):
         """ Executes hook indicating configuration changes
