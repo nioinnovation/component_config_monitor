@@ -1,7 +1,10 @@
+from threading import Event
 from unittest.mock import MagicMock, ANY, patch
 
 from nio.modules.web import RESTHandler
 from niocore.core.context import CoreContext
+from niocore.core.hooks import CoreHooks
+from nio.testing.condition import ConditionWaiter
 
 from ..manager import ConfigManager
 
@@ -33,3 +36,23 @@ class TestConfigManager(NIOTestCase):
                        RESTHandler))
         manager.stop()
         rest_manager.remove_web_handler.assert_called_with(manager._config_handler)
+
+    def test_hooks_called(self):
+        # Verify hook is called when callback is executed
+        self._config_change_called = False
+        CoreHooks.attach("configuration_change", self._on_config_change)
+        manager = ConfigManager()
+        manager.trigger_config_change_hook('all')
+
+        # handle async hook execution
+        event = Event()
+        condition = ConditionWaiter(event, self._verify_config_change_called)
+        condition.start()
+        self.assertTrue(event.wait(1))
+        condition.stop()
+
+    def _on_config_change(self, cfg_type):
+        self._config_change_called = True
+
+    def _verify_config_change_called(self):
+        return self._config_change_called

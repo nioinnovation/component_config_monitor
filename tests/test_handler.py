@@ -1,12 +1,9 @@
-from threading import Event
 from unittest.mock import MagicMock
 
 from nio.modules.web.http import Request
 from nio.testing.modules.security.module import TestingSecurityModule
 
-from nio.testing.condition import ConditionWaiter
 from niocore.configuration import CfgType
-from niocore.core.hooks import CoreHooks
 
 from ..handler import ConfigHandler
 
@@ -27,7 +24,7 @@ class TestConfigHandler(NIOWebTestCase):
         manager = MagicMock()
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'not_refresh'
-        handler = ConfigHandler(None, None, None)
+        handler = ConfigHandler(None)
 
         # Verify error is raised with incorrect identifier
         request = mock_req
@@ -36,10 +33,16 @@ class TestConfigHandler(NIOWebTestCase):
             handler.on_get(request, response)
 
     def test_on_put(self):
-        manager = MagicMock()
+        config_api_url_prefix = None
+        api_key = None
+        config_id = None
+        config_version_id = None
+        manager = MagicMock(config_api_url_prefix=config_api_url_prefix,
+                            config_id=config_id,
+                            config_version_id=config_version_id)
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'update'
-        handler = ConfigHandler(None, None, None)
+        handler = ConfigHandler(manager)
 
         # Verify error is raised with incorrect put body
         mock_req.get_body.return_value  = {}
@@ -48,26 +51,15 @@ class TestConfigHandler(NIOWebTestCase):
         with self.assertRaises(ValueError):
             handler.on_put(request, response)
 
-    def test_hooks_called(self):
-        # Verify hook is called when callback is executed
-        self._config_change_called = False
-        CoreHooks.attach("configuration_change", self._on_config_change)
+        mock_req.get_body.return_value = {
+            "url": "api",
+            "instance_configuration_id": "config_id",
+            "instance_configuration_version_id": "config_version_id",
+        }
+        request = mock_req
+        url = "api/config_id/versions/config_version_id"
+        handler.on_put(request, response)
+        manager.update_configuration.assert_called_once_with(url)
+        manager.trigger_config_change_hook.assert_called_once_with(CfgType.all.name)
 
-        url_prefix = "url_prefix"
-        instance_id = "instance_id"
-        api_key = "api_key"
-        handler = ConfigHandler(url_prefix, instance_id, api_key)
-        handler._trigger_config_change_hook(CfgType.all)
-
-        # handle async hook execution
-        event = Event()
-        condition = ConditionWaiter(event, self._verify_config_change_called)
-        condition.start()
-        self.assertTrue(event.wait(1))
-        condition.stop()
-
-    def _on_config_change(self, cfg_type):
-        self._config_change_called = True
-
-    def _verify_config_change_called(self):
-        return self._config_change_called
+    

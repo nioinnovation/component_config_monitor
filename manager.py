@@ -67,6 +67,18 @@ class ConfigManager(CoreComponent):
             Settings.get("configuration", "config_api_url_prefix",
                 fallback="https://api.nio.works/v1/instance_configurations")
 
+        setting_config_id = Settings.get("configuration", "config_id",
+            fallback=None)
+        self.config_id = Persistence().load("configuration_id",
+                                            default=setting_config_id)
+
+        setting_config_version_id = \
+            Settings.get("configuration", "config_version_id",
+                fallback=None)
+        self.config_version_id = Persistence().\
+            load("configuration_version_id", default=setting_config_version_id)
+
+        # fetch instance specific settings
         default = Persistence().load("api_key", default=None)
         self.api_key = NIOEnvironment.get_variable('API_KEY', 
                                                    default=default)
@@ -80,11 +92,6 @@ class ConfigManager(CoreComponent):
         self._poll_interval = Settings.getint("configuration",
                                               "config_poll_interval",
                                               fallback=86400)
-
-        self.config_id = Persistence().load("configuration_id", 
-                                            default=None)
-        self.config_version_id = Persistence().\
-            load("configuration_version_id", default=None)
 
     def start(self):
         """ Starts component
