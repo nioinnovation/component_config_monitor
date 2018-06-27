@@ -3,6 +3,7 @@
    Configuration Manager
 
 """
+import json
 from datetime import timedelta
 from nio.util.versioning.dependency import DependsOn
 from nio import discoverable
@@ -12,7 +13,6 @@ from nio.modules.persistence import Persistence
 from nio.modules.scheduler.job import Job
 
 from niocore.util.environment import NIOEnvironment
-from niocore.configuration.configuration import Configuration
 from niocore.configuration import CfgType
 
 from niocore.core.hooks import CoreHooks
@@ -34,10 +34,10 @@ class ConfigManager(CoreComponent):
         self._rest_manager = None
         self._config_handler = None
         self._api_proxy = None
+        self._configuration_manager = None
 
         self.config_api_url_prefix = None
         self.api_key = None
-        self.instance_id = None
         self._config_id = None
         self._config_version_id = None
 
@@ -57,6 +57,8 @@ class ConfigManager(CoreComponent):
         """
 
         super().configure(context)
+        self._configuration_manager = \
+            self.get_dependency('ConfigurationManager')
 
         # Register dependency to rest manager
         self._rest_manager = self.get_dependency('RESTManager')
@@ -83,15 +85,13 @@ class ConfigManager(CoreComponent):
         self.api_key = NIOEnvironment.get_variable('API_KEY', 
                                                    default=default)
 
-        self.instance_id = Settings.get("configuration", "instance_id")
-
         # config autonomy spcific settings
         self._poll = Settings.getboolean("configuration", "config_polling",
                                          fallback=False)
                                          
         self._poll_interval = Settings.getint("configuration",
                                               "config_poll_interval",
-                                              fallback=86400)
+                                              fallback=3600)
 
     def start(self):
         """ Starts component
@@ -124,6 +124,7 @@ class ConfigManager(CoreComponent):
 
         # TODO: In NIO-1142, this should first get the newest config version 
         # from the product api before triggering an update
+
         url = "{}/{}/versions/{}".format(self.config_api_url_prefix,
                                          self.config_id,
                                          self.config_version_id)
@@ -131,16 +132,17 @@ class ConfigManager(CoreComponent):
         self.trigger_config_change_hook(CfgType.all.name)
 
     def update_configuration(self, url):
-        configuration = Configuration(CfgType.all.name,
-                                      fetch_on_create=False,
-                                      is_collection=True,
-                                      substitute=False)
-        # erase any existing data under this configuration
-        configuration.clear()
-        # load new config data and save
-        configuration.data = \
-            self._api_proxy.load_configuration(url, self.api_key) or {}
-        configuration.save()
+        inst_config_obj = \
+            self._api_proxy.load_configuration(url, self.api_key)
+        if inst_config_obj:
+            inst_config = json.loads(inst_config_obj.get('configuration_data', {}))
+
+            services = inst_config.get('services', {})
+            blocks = inst_config.get('blocks', {})
+
+            result = self._configuration_manager.update(
+                services, blocks, True, False)
+            self.logger.info("Configuration was updated, {}".format(result))
 
     def trigger_config_change_hook(self, cfg_type):
         """ Executes hook indicating configuration changes
