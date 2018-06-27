@@ -1,3 +1,4 @@
+import json
 from threading import Event
 from unittest.mock import MagicMock, ANY, patch
 
@@ -36,6 +37,64 @@ class TestConfigManager(NIOTestCase):
                        RESTHandler))
         manager.stop()
         rest_manager.remove_web_handler.assert_called_with(manager._config_handler)
+
+    def test_update_config(self):
+        manager = ConfigManager()
+
+        # Set variables
+        manager._start_stop_services = True
+        manager._delete_missing = False
+        manager.config_api_url_prefix = "api"
+        manager.config_id = "cfg_id"
+        manager.config_version_id = "cfg_version_id"
+        
+        # Mock methods/dependancies
+        manager._proxy = MagicMock()
+        manager._configuration_manager = MagicMock()
+
+        url = "api/cfg_id/versions/cfg_version_id"
+
+        blocks = {
+            "block_id": {
+                "id": "block_id"
+            }
+        }
+        services = {
+            "service_id": {
+                "id": "service_id"
+            }
+        }
+        manager._proxy.load_configuration.return_value = {
+            "configuration_data": {
+                "blocks": blocks,
+                "services": services
+            }
+        }
+        manager._configuration_manager.update.return_value = {
+            "services": {
+                "started": [],
+                "stopped": [],
+                "added": [],
+                "modified": [],
+                "ignored": [],
+                "missing": []
+            },
+            "blocks": {
+                "added": [],
+                "modified": [],
+                "ignored": [],
+                "missing": []
+            }
+        }
+
+        manager._run_config_update()
+        self.assertEqual(manager._configuration_manager.update.call_count, 1)
+        call_args = manager._configuration_manager.update.call_args[0]
+        self.assertEqual(call_args[0], services)
+        self.assertEqual(call_args[1], blocks)
+        self.assertEqual(call_args[2], True)
+        self.assertEqual(call_args[3], False)
+
 
     def test_hooks_called(self):
         # Verify hook is called when callback is executed

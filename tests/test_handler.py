@@ -21,7 +21,6 @@ class TestConfigHandler(NIOWebTestCase):
             return super().get_module(module_name)
 
     def test_on_get(self):
-        manager = MagicMock()
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'not_refresh'
         handler = ConfigHandler(None)
@@ -40,12 +39,15 @@ class TestConfigHandler(NIOWebTestCase):
         manager = MagicMock(config_api_url_prefix=config_api_url_prefix,
                             config_id=config_id,
                             config_version_id=config_version_id)
+        manager.update_configuration = MagicMock()
+        manager.update_configuration.return_value = \
+            dict({"foo": "bar"})
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'update'
         handler = ConfigHandler(manager)
 
         # Verify error is raised with incorrect put body
-        mock_req.get_body.return_value  = {}
+        mock_req.get_body.return_value = {}
         request = mock_req
         response = MagicMock()
         with self.assertRaises(ValueError):
@@ -54,12 +56,10 @@ class TestConfigHandler(NIOWebTestCase):
         mock_req.get_body.return_value = {
             "url": "api",
             "instance_configuration_id": "config_id",
-            "instance_configuration_version_id": "config_version_id",
+            "instance_configuration_version_id": "config_version_id"
         }
         request = mock_req
         url = "api/config_id/versions/config_version_id"
         handler.on_put(request, response)
-        manager.update_configuration.assert_called_once_with(url)
-        manager.trigger_config_change_hook.assert_called_once_with(CfgType.all.name)
-
+        handler._manager.update_configuration.assert_called_once_with(url)
     

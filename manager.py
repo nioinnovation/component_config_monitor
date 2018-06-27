@@ -45,6 +45,10 @@ class ConfigManager(CoreComponent):
         self._poll = None
         self._poll_interval = None
 
+        self._configuration_manager = None
+        self._start_stop_services = None
+        self._delete_missing = None
+
     def configure(self, context):
         """ Configures component
 
@@ -62,6 +66,8 @@ class ConfigManager(CoreComponent):
 
         # Register dependency to rest manager
         self._rest_manager = self.get_dependency('RESTManager')
+        self._configuration_manager = \
+            self.get_dependency('ConfigurationManager')
         self.logger.info('REST Manager set to {}'.format(self._rest_manager))
 
         # fetch component settings
@@ -73,12 +79,16 @@ class ConfigManager(CoreComponent):
             fallback=None)
         self.config_id = Persistence().load("configuration_id",
                                             default=setting_config_id)
-
         setting_config_version_id = \
             Settings.get("configuration", "config_version_id",
                 fallback=None)
         self.config_version_id = Persistence().\
             load("configuration_version_id", default=setting_config_version_id)
+        
+        self._start_stop_services = Settings.getboolean(
+            "configuration", "start_stop_services", fallback=True)
+        self._delete_missing = Settings.getboolean(
+            "configuration", "delete_missing", fallback=False)
 
         # fetch instance specific settings
         default = Persistence().load("api_key", default=None)
@@ -92,6 +102,9 @@ class ConfigManager(CoreComponent):
         self._poll_interval = Settings.getint("configuration",
                                               "config_poll_interval",
                                               fallback=3600)
+        self._instance_id = Settings.get("configuration", "instance_id")
+       
+        
 
     def start(self):
         """ Starts component
@@ -124,25 +137,24 @@ class ConfigManager(CoreComponent):
 
         # TODO: In NIO-1142, this should first get the newest config version 
         # from the product api before triggering an update
-
         url = "{}/{}/versions/{}".format(self.config_api_url_prefix,
                                          self.config_id,
                                          self.config_version_id)
-        self.update_configuration(url)
-        self.trigger_config_change_hook(CfgType.all.name)
+        result = self.update_configuration(url)
+        self.logger.info("Configuration was updated, {}".format(result))
 
     def update_configuration(self, url):
-        inst_config_obj = \
-            self._api_proxy.load_configuration(url, self.api_key)
-        if inst_config_obj:
-            inst_config = json.loads(inst_config_obj.get('configuration_data', {}))
+        configuration = self._proxy.load_configuration(url, self.api_key) or {}
+        if "configuration_data" not in configuration:
+            msg = "configuration_data entry missing in nio API return"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
-            services = inst_config.get('services', {})
-            blocks = inst_config.get('blocks', {})
-
-            result = self._configuration_manager.update(
-                services, blocks, True, False)
-            self.logger.info("Configuration was updated, {}".format(result))
+        configuration_data = configuration["configuration_data"]
+        services = configuration_data.get("services", {})
+        blocks = configuration_data.get("blocks", {})
+        return self._configuration_manager.update(
+            services, blocks, self._start_stop_services, self._delete_missing)
 
     def trigger_config_change_hook(self, cfg_type):
         """ Executes hook indicating configuration changes

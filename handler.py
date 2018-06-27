@@ -3,6 +3,8 @@
    Configuration Handler
 
 """
+import json
+
 from nio.util.logging import get_nio_logger
 from niocore.configuration import CfgType
 from nio.modules.security.access import ensure_access
@@ -86,13 +88,13 @@ class ConfigHandler(RESTHandler):
             self._manager.config_id = instance_configuration_id
 
         if instance_configuration_version_id is None:
-            msg = "Invalid body: Body must contain an instance_configuration_version_id"
+            msg = "Invalid body: " \
+                  "Body must contain an instance_configuration_version_id"
             self.logger.warning(msg)
             raise ValueError(msg)
         elif instance_configuration_version_id != self._manager.config_version_id:
             # We should persist the new config version id for this instance
             self._manager.config_version_id = instance_configuration_version_id
-
 
         url = "{}/{}/versions/{}"\
             .format(url_prefix,
@@ -100,7 +102,7 @@ class ConfigHandler(RESTHandler):
                     instance_configuration_version_id)
 
         # get configuration and update running instance
-        self._manager.update_configuration(url)
-        self._manager.trigger_config_change_hook(CfgType.all.name)
-
-        return
+        result = self._manager.update_configuration(url)
+        # provide response
+        response.set_header('Content-Type', 'application/json')
+        response.set_body(json.dumps(result))
