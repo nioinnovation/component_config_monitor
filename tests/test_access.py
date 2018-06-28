@@ -12,7 +12,7 @@ class TestAccess(NIOTestCase):
     def test_access(self):
         """ Asserts that API handlers are protected.
         """
-        handler = ConfigHandler(None, None, None, None, None, None)
+        handler = ConfigHandler(None)
         with patch.object(Authorizer, "authorize",
                           side_effect=Unauthorized) as patched_authorize:
 

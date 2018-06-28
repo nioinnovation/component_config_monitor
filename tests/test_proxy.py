@@ -1,7 +1,7 @@
 from unittest.mock import patch
 from urllib.parse import urlencode
 
-from ..proxy import ConfigurationProxy
+from ..proxy import ConfigProxy
 
 
 # noinspection PyProtectedMember
@@ -11,8 +11,8 @@ from nio.testing.test_case import NIOTestCase
 class TestProxy(NIOTestCase):
 
     def test_requests_call(self):
-        proxy = ConfigurationProxy()
-        with patch("{}.requests".format(ConfigurationProxy.__module__)) \
+        proxy = ConfigProxy()
+        with patch("{}.requests".format(ConfigProxy.__module__)) \
                 as request_patch:
             proxy.load_configuration("url", "token")
             headers = proxy._get_headers("token")
