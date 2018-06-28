@@ -3,7 +3,6 @@
    Configuration Manager
 
 """
-import json
 from datetime import timedelta
 from nio.util.versioning.dependency import DependsOn
 from nio import discoverable
@@ -13,7 +12,6 @@ from nio.modules.persistence import Persistence
 from nio.modules.scheduler.job import Job
 
 from niocore.util.environment import NIOEnvironment
-from niocore.configuration import CfgType
 
 from niocore.core.hooks import CoreHooks
 from niocore.core.component import CoreComponent
@@ -61,14 +59,10 @@ class ConfigManager(CoreComponent):
         """
 
         super().configure(context)
-        self._configuration_manager = \
-            self.get_dependency('ConfigurationManager')
-
         # Register dependency to rest manager
         self._rest_manager = self.get_dependency('RESTManager')
         self._configuration_manager = \
             self.get_dependency('ConfigurationManager')
-        self.logger.info('REST Manager set to {}'.format(self._rest_manager))
 
         # fetch component settings
         self.config_api_url_prefix = \
@@ -77,12 +71,12 @@ class ConfigManager(CoreComponent):
 
         setting_config_id = Settings.get("configuration", "config_id",
             fallback=None)
-        self.config_id = Persistence().load("configuration_id",
+        self._config_id = Persistence().load("configuration_id",
                                             default=setting_config_id)
         setting_config_version_id = \
             Settings.get("configuration", "config_version_id",
                 fallback=None)
-        self.config_version_id = Persistence().\
+        self._config_version_id = Persistence().\
             load("configuration_version_id", default=setting_config_version_id)
         
         self._start_stop_services = Settings.getboolean(
@@ -96,15 +90,9 @@ class ConfigManager(CoreComponent):
                                                    default=default)
 
         # config autonomy spcific settings
-        self._poll = Settings.getboolean("configuration", "config_polling",
-                                         fallback=False)
-                                         
         self._poll_interval = Settings.getint("configuration",
                                               "config_poll_interval",
-                                              fallback=3600)
-        self._instance_id = Settings.get("configuration", "instance_id")
-       
-        
+                                              fallback=0)
 
     def start(self):
         """ Starts component
@@ -117,7 +105,7 @@ class ConfigManager(CoreComponent):
         self._config_handler = ConfigHandler(self)
         self._rest_manager.add_web_handler(self._config_handler)
     
-        if self._poll:
+        if self._poll_interval:
             self._poll_job = Job(self._run_config_update,
                                  timedelta(seconds=self._poll_interval),
                                  True)
@@ -127,7 +115,7 @@ class ConfigManager(CoreComponent):
         """
         self._rest_manager.remove_web_handler(self._config_handler)
         
-        if self._poll:
+        if self._poll_interval:
             self._poll_job.cancel()
         
         super().stop()
@@ -144,7 +132,7 @@ class ConfigManager(CoreComponent):
         self.logger.info("Configuration was updated, {}".format(result))
 
     def update_configuration(self, url):
-        configuration = self._proxy.load_configuration(url, self.api_key) or {}
+        configuration = self._api_proxy.load_configuration(url, self.api_key) or {}
         if "configuration_data" not in configuration:
             msg = "configuration_data entry missing in nio API return"
             self.logger.error(msg)

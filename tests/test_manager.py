@@ -49,7 +49,7 @@ class TestConfigManager(NIOTestCase):
         manager.config_version_id = "cfg_version_id"
         
         # Mock methods/dependancies
-        manager._proxy = MagicMock()
+        manager._api_proxy = MagicMock()
         manager._configuration_manager = MagicMock()
 
         url = "api/cfg_id/versions/cfg_version_id"
@@ -64,7 +64,7 @@ class TestConfigManager(NIOTestCase):
                 "id": "service_id"
             }
         }
-        manager._proxy.load_configuration.return_value = {
+        manager._api_proxy.load_configuration.return_value = {
             "configuration_data": {
                 "blocks": blocks,
                 "services": services
