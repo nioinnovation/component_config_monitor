@@ -49,7 +49,9 @@ class TestConfigManager(NIOTestCase):
         manager.update_configuration = MagicMock()
 
         # Test that update isn't called with the same version id
-        manager._api_proxy.get_version.return_value = "cfg_version_id"
+        manager._api_proxy.get_version.return_value = {
+            "instance_configuration_version_id": "cfg_version_id"
+        }
 
         manager._run_config_update()
         self.assertEqual(manager._api_proxy.get_version.call_count, 1)
@@ -58,7 +60,9 @@ class TestConfigManager(NIOTestCase):
         self.assertEqual(manager.update_configuration.call_count, 0)
 
         # Test update called with a new config version id
-        manager._api_proxy.get_version.return_value = "new_cfg_version_id"
+        manager._api_proxy.get_version.return_value = {
+            "instance_configuration_version_id": "new_cfg_version_id"
+        }
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 1)
         manager.update_configuration.\
