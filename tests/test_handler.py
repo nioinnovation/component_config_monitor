@@ -59,7 +59,9 @@ class TestConfigHandler(NIOWebTestCase):
             "instance_configuration_version_id": "config_version_id"
         }
         request = mock_req
-        url = "api/config_id/versions/config_version_id"
         handler.on_put(request, response)
-        handler._manager.update_configuration.assert_called_once_with(url)
+        handler._manager.update_configuration.\
+            assert_called_once_with("api",
+                                    "config_id",
+                                    "config_version_id")
     

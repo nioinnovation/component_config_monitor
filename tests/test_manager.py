@@ -38,6 +38,32 @@ class TestConfigManager(NIOTestCase):
         manager.stop()
         rest_manager.remove_web_handler.assert_called_with(manager._config_handler)
 
+    def test_update_with_latest_version(self):
+        manager = ConfigManager()
+
+        manager.api_key = "apikey"
+        manager.config_api_url_prefix = "api"
+        manager.config_id = "cfg_id"
+        manager.config_version_id = "cfg_version_id"
+        manager._api_proxy = MagicMock()
+        manager.update_configuration = MagicMock()
+
+        # Test that update isn't called with the same version id
+        manager._api_proxy.get_version.return_value = "cfg_version_id"
+
+        manager._run_config_update()
+        self.assertEqual(manager._api_proxy.get_version.call_count, 1)
+        manager._api_proxy.get_version.\
+            assert_called_once_with("api", "cfg_id", "apikey")
+        self.assertEqual(manager.update_configuration.call_count, 0)
+
+        # Test update called with a new config version id
+        manager._api_proxy.get_version.return_value = "new_cfg_version_id"
+        manager._run_config_update()
+        self.assertEqual(manager.update_configuration.call_count, 1)
+        manager.update_configuration.\
+            assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
+
     def test_update_config(self):
         manager = ConfigManager()
 
