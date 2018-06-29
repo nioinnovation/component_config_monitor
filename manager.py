@@ -128,7 +128,8 @@ class ConfigManager(CoreComponent):
             self._api_proxy.get_version(self.config_api_url_prefix,
                                         self.config_id,
                                         self.api_key)
-        config_version_id = latest_version_id.get("instance_configuration_version_id")
+        config_version_id = \
+            latest_version_id.get("instance_configuration_version_id")
         # Update instance with new config version id
         if config_version_id != self.config_version_id:
             self.config_version_id = config_version_id

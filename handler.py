@@ -80,7 +80,8 @@ class ConfigHandler(RESTHandler):
                       self._manager.config_version_id)
 
         if instance_configuration_id is None:
-            msg = "Invalid body: Body must contain an instance_configuration_id"
+            msg = \
+                "Invalid body: Body must contain an instance_configuration_id"
             self.logger.warning(msg)
             raise ValueError(msg)
         elif instance_configuration_id != self._manager.config_id:

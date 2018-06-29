@@ -30,13 +30,15 @@ class TestConfigManager(NIOTestCase):
             manager.configure(context)
 
         manager.start()
-        rest_manager.add_web_handler.assert_called_with(manager._config_handler)
+        rest_manager.add_web_handler.\
+            assert_called_with(manager._config_handler)
         self.assertEqual(2, len(rest_manager.add_web_handler.call_args))
         self.assertTrue(
             isinstance(rest_manager.add_web_handler.call_args[0][0],
                        RESTHandler))
         manager.stop()
-        rest_manager.remove_web_handler.assert_called_with(manager._config_handler)
+        rest_manager.remove_web_handler.\
+            assert_called_with(manager._config_handler)
 
     def test_update_with_latest_version(self):
         manager = ConfigManager()
@@ -124,7 +126,6 @@ class TestConfigManager(NIOTestCase):
         self.assertEqual(call_args[1], blocks)
         self.assertEqual(call_args[2], True)
         self.assertEqual(call_args[3], False)
-
 
     def test_hooks_called(self):
         # Verify hook is called when callback is executed

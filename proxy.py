@@ -29,7 +29,8 @@ class ConfigProxy(object):
         except requests.exceptions.ConnectionError:
             self.logger.exception("Failed to get configuration version")
 
-    def load_configuration(self, url_prefix, config_id, config_version_id, apikey):
+    def load_configuration(self, url_prefix, \
+                           config_id, config_version_id, apikey):
         """ 
         Retrieves an instance configruation by a instance_configuration_id 
         and a instance_configuration_version_id
