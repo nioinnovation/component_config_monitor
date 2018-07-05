@@ -15,7 +15,12 @@ class ConfigProxy(object):
         """
         Retrieves the latest instance configuration version id
 
-        Returns: a configuration vesion id string
+        Returns: an object with format
+            {
+                "instance_configuration_version_id": "uuid..",
+                "version_num": "v1.0.0",
+                "created_at": "2018-03-14 12:12:12"
+            }
         """
 
         try:
