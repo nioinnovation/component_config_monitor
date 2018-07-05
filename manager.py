@@ -123,16 +123,27 @@ class ConfigManager(CoreComponent):
     def _run_config_update(self):
         # Callback function to run update at the end of each polling interval
 
-        # TODO: In NIO-1142, this should first get the newest config version 
-        # from the product api before triggering an update
-        url = "{}/{}/versions/{}".format(self.config_api_url_prefix,
-                                         self.config_id,
-                                         self.config_version_id)
-        result = self.update_configuration(url)
-        self.logger.info("Configuration was updated, {}".format(result))
+        # Poll the product api for the latest config version id
+        latest_version_id = \
+            self._api_proxy.get_version(self.config_api_url_prefix,
+                                        self.config_id,
+                                        self.api_key)
+        config_version_id = \
+            latest_version_id.get("instance_configuration_version_id")
+        # Update instance with new config version id
+        if config_version_id != self.config_version_id:
+            self.config_version_id = config_version_id
+            result = self.update_configuration(self.config_api_url_prefix,
+                                               self.config_id,
+                                               self.config_version_id)
+            self.logger.info("Configuration was updated, {}".format(result))
 
-    def update_configuration(self, url):
-        configuration = self._api_proxy.load_configuration(url, self.api_key) or {}
+    def update_configuration(self, url_prefix, config_id, config_version_id):
+        configuration = \
+            self._api_proxy.load_configuration(url_prefix,
+                                               config_id,
+                                               config_version_id,
+                                               self.api_key)
         if "configuration_data" not in configuration:
             msg = "configuration_data entry missing in nio API return"
             self.logger.error(msg)

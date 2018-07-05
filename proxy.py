@@ -11,7 +11,31 @@ class ConfigProxy(object):
         super().__init__()
         self.logger = get_nio_logger("ConfigProxy")
 
-    def load_configuration(self, url, apikey):
+    def get_version(self, url_prefix, config_id, apikey):
+        """
+        Retrieves the latest instance configuration version id
+
+        Returns: an object with format
+            {
+                "instance_configuration_version_id": "uuid..",
+                "version_num": "v1.0.0",
+                "created_at": "2018-03-14 12:12:12"
+            }
+        """
+
+        try:
+            url = "{}/{}/versions/latest".format(url_prefix, config_id)
+            response = requests.get(
+                url,
+                headers=self._get_headers(apikey)
+            )
+            if response.ok:
+                return response.json()
+        except requests.exceptions.ConnectionError:
+            self.logger.exception("Failed to get configuration version")
+
+    def load_configuration(self, url_prefix, \
+                           config_id, config_version_id, apikey):
         """ 
         Retrieves an instance configruation by a instance_configuration_id 
         and a instance_configuration_version_id
@@ -31,6 +55,9 @@ class ConfigProxy(object):
         """
         
         try:
+            url = "{}/{}/versions/{}".format(url_prefix,
+                                             config_id,
+                                             config_version_id)
             response = requests.get(
                 url,
                 headers=self._get_headers(apikey)

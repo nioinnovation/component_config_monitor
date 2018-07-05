@@ -80,7 +80,8 @@ class ConfigHandler(RESTHandler):
                       self._manager.config_version_id)
 
         if instance_configuration_id is None:
-            msg = "Invalid body: Body must contain an instance_configuration_id"
+            msg = \
+                "Invalid body: Body must contain an instance_configuration_id"
             self.logger.warning(msg)
             raise ValueError(msg)
         elif instance_configuration_id != self._manager.config_id:
@@ -96,13 +97,11 @@ class ConfigHandler(RESTHandler):
             # We should persist the new config version id for this instance
             self._manager.config_version_id = instance_configuration_version_id
 
-        url = "{}/{}/versions/{}"\
-            .format(url_prefix,
-                    instance_configuration_id,
-                    instance_configuration_version_id)
-
         # get configuration and update running instance
-        result = self._manager.update_configuration(url)
+        result = self._manager.\
+            update_configuration(url_prefix,
+                                 instance_configuration_id,
+                                 instance_configuration_version_id)
         # provide response
         response.set_header('Content-Type', 'application/json')
         response.set_body(json.dumps(result))
