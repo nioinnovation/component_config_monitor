@@ -3,6 +3,7 @@
    Configuration Manager
 
 """
+import json
 from datetime import timedelta
 from nio.util.versioning.dependency import DependsOn
 from nio import discoverable
@@ -149,7 +150,7 @@ class ConfigManager(CoreComponent):
             self.logger.error(msg)
             raise RuntimeError(msg)
 
-        configuration_data = configuration["configuration_data"]
+        configuration_data = json.loads(configuration["configuration_data"])
         services = configuration_data.get("services", {})
         blocks = configuration_data.get("blocks", {})
         return self._configuration_manager.update(

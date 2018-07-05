@@ -70,7 +70,8 @@ class TestConfigManager(NIOTestCase):
         manager.update_configuration.\
             assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
 
-    def test_update_config(self):
+    @patch(ConfigManager.__module__ + '.json')
+    def test_update_config(self, MockJSON):
         manager = ConfigManager()
 
         # Set variables
@@ -101,6 +102,10 @@ class TestConfigManager(NIOTestCase):
                 "blocks": blocks,
                 "services": services
             }
+        }
+        MockJSON.loads.return_value = {
+            "blocks": blocks,
+            "services": services
         }
         manager._configuration_manager.update.return_value = {
             "services": {
