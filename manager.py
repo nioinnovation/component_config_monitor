@@ -143,7 +143,7 @@ class ConfigManager(CoreComponent):
             self._api_proxy.load_configuration(url_prefix,
                                                config_id,
                                                config_version_id,
-                                               self.api_key) or {}
+                                               self.api_key)
         if "configuration_data" not in configuration:
             msg = "configuration_data entry missing in nio API return"
             self.logger.error(msg)
