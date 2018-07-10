@@ -50,6 +50,15 @@ class TestConfigManager(NIOTestCase):
         manager._api_proxy = MagicMock()
         manager.update_configuration = MagicMock()
 
+        # Test that update isn't called when latest route fails
+        manager._api_proxy.get_version.return_value = None
+
+        with self.assertRaises(RuntimeError):
+            manager._run_config_update()
+            self.assertEqual(manager._api_proxy.get_version.call_count, 1)
+            self.assertEqual(manager.update_configuration.call_count, 0)
+        
+        manager._api_proxy.reset_mock()
         # Test that update isn't called with the same version id
         manager._api_proxy.get_version.return_value = {
             "instance_configuration_version_id": "cfg_version_id"
@@ -61,6 +70,7 @@ class TestConfigManager(NIOTestCase):
             assert_called_once_with("api", "cfg_id", "apikey")
         self.assertEqual(manager.update_configuration.call_count, 0)
 
+        manager._api_proxy.reset_mock()
         # Test update called with a new config version id
         manager._api_proxy.get_version.return_value = {
             "instance_configuration_version_id": "new_cfg_version_id"

@@ -68,7 +68,7 @@ class ConfigManager(CoreComponent):
         # fetch component settings
         self.config_api_url_prefix = \
             Settings.get("configuration", "config_api_url_prefix",
-                fallback="https://api.nio.works/v1/instance_configurations")
+                fallback="https://api.n.io/v1/instance_configurations")
 
         setting_config_id = Settings.get("configuration", "config_id",
             fallback=None)
@@ -129,6 +129,12 @@ class ConfigManager(CoreComponent):
             self._api_proxy.get_version(self.config_api_url_prefix,
                                         self.config_id,
                                         self.api_key)
+
+        if latest_version_id is None:
+            msg = "latest_version_id failure in nio API return"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
+
         config_version_id = \
             latest_version_id.get("instance_configuration_version_id")
         # Update instance with new config version id
