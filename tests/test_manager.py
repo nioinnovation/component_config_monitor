@@ -3,14 +3,14 @@ from unittest.mock import MagicMock, patch
 from nio.modules.web import RESTHandler
 from niocore.core.context import CoreContext
 
-from ..manager import ConfigManager
+from ..manager import DeploymentManager
 
 
 # noinspection PyProtectedMember
 from nio.testing.test_case import NIOTestCase
 
 
-class TestConfigManager(NIOTestCase):
+class TestDeploymentManager(NIOTestCase):
 
     def test_start_stop(self):
         # Test a handler is created and passed to REST Manager on start
@@ -19,7 +19,7 @@ class TestConfigManager(NIOTestCase):
         rest_manager.add_web_handler = MagicMock()
         context = CoreContext([], [])
 
-        manager = ConfigManager()
+        manager = DeploymentManager()
         manager.get_dependency = MagicMock(return_value=rest_manager)
 
         with patch("nio.modules.settings.Settings.get"):
@@ -37,7 +37,7 @@ class TestConfigManager(NIOTestCase):
             assert_called_with(manager._config_handler)
 
     def test_update_with_latest_version(self):
-        manager = ConfigManager()
+        manager = DeploymentManager()
 
         manager.api_key = "apikey"
         manager.config_api_url_prefix = "api"
@@ -76,9 +76,9 @@ class TestConfigManager(NIOTestCase):
         manager.update_configuration.\
             assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
 
-    @patch(ConfigManager.__module__ + '.json')
+    @patch(DeploymentManager.__module__ + '.json')
     def test_update_config(self, MockJSON):
-        manager = ConfigManager()
+        manager = DeploymentManager()
 
         # Set variables
         manager._start_stop_services = True
