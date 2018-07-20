@@ -14,7 +14,6 @@ from nio.modules.scheduler.job import Job
 
 from niocore.util.environment import NIOEnvironment
 
-from niocore.core.hooks import CoreHooks
 from niocore.core.component import CoreComponent
 
 from .handler import ConfigHandler
@@ -161,12 +160,6 @@ class ConfigManager(CoreComponent):
         blocks = configuration_data.get("blocks", {})
         return self._configuration_manager.update(
             services, blocks, self._start_stop_services, self._delete_missing)
-
-    def trigger_config_change_hook(self, cfg_type):
-        """ Executes hook indicating configuration changes
-        """
-        self.logger.debug("Triggering configuration change hook")
-        CoreHooks.run('configuration_change', cfg_type)
 
     @property
     def config_id(self):

@@ -6,7 +6,6 @@
 import json
 
 from nio.util.logging import get_nio_logger
-from niocore.configuration import CfgType
 from nio.modules.security.access import ensure_access
 from nio.modules.web import RESTHandler
 
@@ -23,32 +22,7 @@ class ConfigHandler(RESTHandler):
         self.logger = get_nio_logger("ConfigHandler")
 
     def on_get(self, request, response, *args, **kwargs):
-        """ API endpoint for configuration component
-
-        Example:
-            http://[host]:[port]/config/refresh
-
-        """
-        # Ensure instance "execute" access
-        ensure_access("instance", "execute")
-
-        params = request.get_params()
-        self.logger.debug("on_get, params: {0}".format(params))
-
-        if request.get_identifier() != 'refresh':
-             msg = "Invalid parameters: {0} in 'config': {0}".format(params)
-             self.logger.warning(msg)
-             raise ValueError(msg)
-
-        cfg_type = params.get('cfg_type', CfgType.all.name)
-
-        for current_enum in CfgType:
-            if current_enum.name == cfg_type:
-                self._manager.trigger_config_change_hook(current_enum)
-                return
-        msg = "Invalid 'config' refresh type: {0}".format(cfg_type)
-        self.logger.warning(msg)
-        raise ValueError(msg) 
+        raise NotImplementedError
 
     def on_put(self, request, response, *args, **kwargs):
         """ API endpoint for configuration component

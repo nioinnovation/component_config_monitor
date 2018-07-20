@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from nio.modules.web.http import Request
+from nio.modules.web.http import Request, Response
 from nio.testing.modules.security.module import TestingSecurityModule
 
 from niocore.configuration import CfgType
@@ -21,15 +21,11 @@ class TestConfigHandler(NIOWebTestCase):
             return super().get_module(module_name)
 
     def test_on_get(self):
-        mock_req = MagicMock(spec=Request)
-        mock_req.get_identifier.return_value = 'not_refresh'
+        """ Asserts 'GET' call NotImplemented response.
+        """
         handler = ConfigHandler(None)
-
-        # Verify error is raised with incorrect identifier
-        request = mock_req
-        response = MagicMock()
-        with self.assertRaises(ValueError):
-            handler.on_get(request, response)
+        with self.assertRaises(NotImplementedError):
+            handler.on_get(MagicMock(spec=Request), MagicMock(spec=Response))
 
     def test_on_put(self):
         config_api_url_prefix = None
