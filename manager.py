@@ -1,6 +1,6 @@
 """
 
-   Configuration Manager
+   Deployment API Manager
 
 """
 import json
@@ -16,16 +16,16 @@ from niocore.util.environment import NIOEnvironment
 
 from niocore.core.component import CoreComponent
 
-from .handler import ConfigHandler
-from .proxy import ConfigProxy
+from .handler import DeploymentHandler
+from .proxy import DeploymentProxy
 
 @DependsOn('niocore.components.rest')
 @discoverable
-class ConfigManager(CoreComponent):
+class DeploymentManager(CoreComponent):
     """ Handle configuration updates
     """
 
-    _name = "ConfigManager"
+    _name = "DeploymentManager"
 
     def __init__(self):
         super().__init__()
@@ -97,12 +97,12 @@ class ConfigManager(CoreComponent):
     def start(self):
         """ Starts component
 
-        Instantiates ConfigHandler and ConfigProxy
+        Instantiates DeploymentHandler and DeploymentProxy
         Begins polling job if it is set
         """
         super().start()
-        self._api_proxy = ConfigProxy()
-        self._config_handler = ConfigHandler(self)
+        self._api_proxy = DeploymentProxy()
+        self._config_handler = DeploymentHandler(self)
         self._rest_manager.add_web_handler(self._config_handler)
     
         if self._poll_interval:

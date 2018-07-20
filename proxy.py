@@ -3,7 +3,7 @@ import requests
 from nio.util.logging import get_nio_logger
 
 
-class ConfigProxy(object):
+class DeploymentProxy(object):
     """ Serves as a Proxy to make Product API configuration requests
     """
 

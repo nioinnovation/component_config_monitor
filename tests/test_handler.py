@@ -5,13 +5,13 @@ from nio.testing.modules.security.module import TestingSecurityModule
 
 from niocore.configuration import CfgType
 
-from ..handler import ConfigHandler
+from ..handler import DeploymentHandler
 
 # noinspection PyProtectedMember
 from nio.testing.web_test_case import NIOWebTestCase
 
 
-class TestConfigHandler(NIOWebTestCase):
+class TestDeploymentHandler(NIOWebTestCase):
 
     def get_module(self, module_name):
         # Don't want to test permissions, use the test module
@@ -23,7 +23,7 @@ class TestConfigHandler(NIOWebTestCase):
     def test_on_get(self):
         """ Asserts 'GET' call NotImplemented response.
         """
-        handler = ConfigHandler(None)
+        handler = DeploymentHandler(None)
         with self.assertRaises(NotImplementedError):
             handler.on_get(MagicMock(spec=Request), MagicMock(spec=Response))
 
@@ -40,7 +40,7 @@ class TestConfigHandler(NIOWebTestCase):
             dict({"foo": "bar"})
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'update'
-        handler = ConfigHandler(manager)
+        handler = DeploymentHandler(manager)
 
         # Verify error is raised with incorrect put body
         mock_req.get_body.return_value = {}

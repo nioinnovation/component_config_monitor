@@ -1,18 +1,18 @@
 from unittest.mock import patch
 from urllib.parse import urlencode
 
-from ..proxy import ConfigProxy
+from ..proxy import DeploymentProxy
 
 
 # noinspection PyProtectedMember
 from nio.testing.test_case import NIOTestCase
 
 
-class TestProxy(NIOTestCase):
+class TestDeploymentProxy(NIOTestCase):
 
     def test_get_version(self):
-        proxy = ConfigProxy()
-        with patch("{}.requests".format(ConfigProxy.__module__)) \
+        proxy = DeploymentProxy()
+        with patch("{}.requests".format(DeploymentProxy.__module__)) \
                 as request_patch:
             proxy.get_version("api", "config_id", "token")
             headers = proxy._get_headers("token")
@@ -28,8 +28,8 @@ class TestProxy(NIOTestCase):
                                                  headers=headers)
 
     def test_load_configuration(self):
-        proxy = ConfigProxy()
-        with patch("{}.requests".format(ConfigProxy.__module__)) \
+        proxy = DeploymentProxy()
+        with patch("{}.requests".format(DeploymentProxy.__module__)) \
                 as request_patch:
             proxy.load_configuration("api",
                                      "config_id",

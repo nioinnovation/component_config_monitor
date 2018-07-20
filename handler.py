@@ -1,6 +1,6 @@
 """
 
-   Configuration Handler
+   Deployment API Handler
 
 """
 import json
@@ -10,7 +10,7 @@ from nio.modules.security.access import ensure_access
 from nio.modules.web import RESTHandler
 
 
-class ConfigHandler(RESTHandler):
+class DeploymentHandler(RESTHandler):
 
     """ Handler for config component
     """
@@ -19,7 +19,7 @@ class ConfigHandler(RESTHandler):
         super().__init__('/config/')
 
         self._manager = manager
-        self.logger = get_nio_logger("ConfigHandler")
+        self.logger = get_nio_logger("DeploymentHandler")
 
     def on_get(self, request, response, *args, **kwargs):
         raise NotImplementedError
