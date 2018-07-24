@@ -19,6 +19,7 @@ from niocore.core.component import CoreComponent
 from .handler import DeploymentHandler
 from .proxy import DeploymentProxy
 
+
 @DependsOn('niocore.components.rest')
 @discoverable
 class DeploymentManager(CoreComponent):
@@ -156,10 +157,8 @@ class DeploymentManager(CoreComponent):
             raise RuntimeError(msg)
 
         configuration_data = json.loads(configuration["configuration_data"])
-        services = configuration_data.get("services", {})
-        blocks = configuration_data.get("blocks", {})
         return self._configuration_manager.update(
-            services, blocks, self._start_stop_services, self._delete_missing)
+            configuration_data, self._start_stop_services, self._delete_missing)
 
     @property
     def config_id(self):

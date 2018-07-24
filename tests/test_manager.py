@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 from nio.modules.web import RESTHandler
@@ -76,8 +77,8 @@ class TestDeploymentManager(NIOTestCase):
         manager.update_configuration.\
             assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
 
-    @patch(DeploymentManager.__module__ + '.json')
-    def test_update_config(self, MockJSON):
+    def test_update_config(self):
+
         manager = DeploymentManager()
 
         # Set variables
@@ -85,55 +86,42 @@ class TestDeploymentManager(NIOTestCase):
         manager._delete_missing = False
         manager.config_api_url_prefix = "api"
         manager.config_id = "cfg_id"
-        manager.config_version_id = "cfg_version_id"
+        manager.config_version_id = "cfg_version_id_1"
         
-        # Mock methods/dependancies
+        # Mock methods/dependencies
         manager._api_proxy = MagicMock()
         manager._configuration_manager = MagicMock()
 
-        url = "api/cfg_id/versions/cfg_version_id"
-
-        blocks = {
-            "block_id": {
-                "id": "block_id"
-            }
-        }
-        services = {
-            "service_id": {
-                "id": "service_id"
-            }
+        configuration = {
+            "blocks": {},
+            "services": {},
+            "blockTypes": {},
+            "any_other_data": {}
         }
         manager._api_proxy.load_configuration.return_value = {
-            "configuration_data": {
-                "blocks": blocks,
-                "services": services
-            }
+            "configuration_data": json.dumps(configuration)
         }
-        MockJSON.loads.return_value = {
-            "blocks": blocks,
-            "services": services
-        }
-        manager._configuration_manager.update.return_value = {
-            "services": {
-                "started": [],
-                "stopped": [],
-                "added": [],
-                "modified": [],
-                "ignored": [],
-                "missing": []
-            },
-            "blocks": {
-                "added": [],
-                "modified": [],
-                "ignored": [],
-                "missing": []
-            }
-        }
-
         manager._run_config_update()
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
         call_args = manager._configuration_manager.update.call_args[0]
-        self.assertEqual(call_args[0], services)
-        self.assertEqual(call_args[1], blocks)
-        self.assertEqual(call_args[2], True)
-        self.assertEqual(call_args[3], False)
+        self.assertDictEqual(call_args[0], configuration)
+        self.assertEqual(call_args[1], True)
+        self.assertEqual(call_args[2], False)
+
+        # show that component is not tied to any configuration data fields other
+        # than expecting a 'configuration_data' entry
+        manager._api_proxy.load_configuration.return_value = {
+            "a_field": "a_field_data"
+        }
+        manager.config_version_id = "cfg_version_id_2"
+        with self.assertRaises(RuntimeError):
+            manager._run_config_update()
+            # assert update was not called since incoming data was not valid
+        self.assertEqual(manager._configuration_manager.update.call_count, 1)
+
+        manager._api_proxy.load_configuration.return_value = {
+            "configuration_data": json.dumps({})
+        }
+        manager.config_version_id = "cfg_version_id_3"
+        manager._run_config_update()
+        self.assertEqual(manager._configuration_manager.update.call_count, 2)
