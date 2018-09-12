@@ -5,9 +5,19 @@ A nio component providing functionality to update and/or refresh configuration f
 
 ## Configuration
 
-- product_api_url_prefix: indicates the prefix url to use when requesting a configuration from the Product API
-- instance_id: indicates the instance identifier to use when requesting a configuration from the Product API
+```
+[configuration]
+# url to use when requesting a configuration from the Product API
+config_api_url_prefix: 
 
+# specifies if modified services are to be started/stopped based on the
+# auto_start flag
+#start_stop_services=True
+
+# specifies if existing blocks and services are to be deleted when not found
+# in the incoming configuration
+#delete_missing=False
+```
 
 ## Dependencies
 
