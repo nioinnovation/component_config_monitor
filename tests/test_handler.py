@@ -32,9 +32,11 @@ class TestDeploymentHandler(NIOWebTestCase):
         api_key = None
         config_id = None
         config_version_id = None
+        instance_id = "instance_id"
         manager = MagicMock(config_api_url_prefix=config_api_url_prefix,
                             config_id=config_id,
-                            config_version_id=config_version_id)
+                            config_version_id=config_version_id,
+                            _instance_id = instance_id)
         manager.update_configuration = MagicMock()
         manager.update_configuration.return_value = \
             dict({"foo": "bar"})
@@ -50,14 +52,12 @@ class TestDeploymentHandler(NIOWebTestCase):
             handler.on_put(request, response)
 
         mock_req.get_body.return_value = {
-            "url": "api",
+            "url": "api_url_prefix",
             "instance_configuration_id": "config_id",
             "instance_configuration_version_id": "config_version_id"
         }
         request = mock_req
         handler.on_put(request, response)
         handler._manager.update_configuration.\
-            assert_called_once_with("api",
-                                    "config_id",
-                                    "config_version_id")
-    
+            assert_called_once_with("api_url_prefix",
+                                    instance_id)

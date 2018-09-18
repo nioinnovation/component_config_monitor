@@ -40,8 +40,9 @@ class TestDeploymentManager(NIOTestCase):
     def test_update_with_latest_version(self):
         manager = DeploymentManager()
 
-        manager.api_key = "apikey"
-        manager.config_api_url_prefix = "api"
+        manager._api_key = "apikey"
+        manager._instance_id = "my_instance_id"
+        manager._config_api_url_prefix = "url_prefix"
         manager.config_id = "cfg_id"
         manager.config_version_id = "cfg_version_id"
         manager._api_proxy = MagicMock()
@@ -64,7 +65,7 @@ class TestDeploymentManager(NIOTestCase):
         manager._run_config_update()
         self.assertEqual(manager._api_proxy.get_version.call_count, 1)
         manager._api_proxy.get_version.\
-            assert_called_once_with("api", "cfg_id", "apikey")
+            assert_called_once_with("url_prefix", "cfg_id", "apikey")
         self.assertEqual(manager.update_configuration.call_count, 0)
 
         manager._api_proxy.reset_mock()
@@ -75,7 +76,7 @@ class TestDeploymentManager(NIOTestCase):
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 1)
         manager.update_configuration.\
-            assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
+            assert_called_once_with("url_prefix", manager._instance_id)
 
     def test_update_config(self):
 
@@ -84,7 +85,7 @@ class TestDeploymentManager(NIOTestCase):
         # Set variables
         manager._start_stop_services = True
         manager._delete_missing = False
-        manager.config_api_url_prefix = "api"
+        manager._config_api_url_prefix = "api"
         manager.config_id = "cfg_id"
         manager.config_version_id = "cfg_version_id_1"
         
