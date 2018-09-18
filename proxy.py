@@ -34,11 +34,8 @@ class DeploymentProxy(object):
         except requests.exceptions.ConnectionError:
             self.logger.exception("Failed to get configuration version")
 
-    def load_configuration(self, url_prefix, \
-                           config_id, config_version_id, apikey):
-        """ 
-        Retrieves an instance configruation by a instance_configuration_id 
-        and a instance_configuration_version_id
+    def load_configuration(self, url_prefix, instance_id, apikey):
+        """ Retrieves an instance configuration by an instance_id and apikey
 
         Returns: configuration with format
             {
@@ -46,6 +43,7 @@ class DeploymentProxy(object):
                     "version": 1.0.0,
                     "blocks": {...},
                     "services": {...},
+                    "blockTypes": {...}
                 },
                 "message": "Found Instance Configuration...",
                 "status": 200,
@@ -55,9 +53,8 @@ class DeploymentProxy(object):
         """
         
         try:
-            url = "{}/{}/versions/{}".format(url_prefix,
-                                             config_id,
-                                             config_version_id)
+            url = "{}/instances/{}/configuration".format(url_prefix,
+                                                         instance_id)
             response = requests.get(
                 url,
                 headers=self._get_headers(apikey)

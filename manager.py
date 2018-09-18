@@ -35,8 +35,10 @@ class DeploymentManager(CoreComponent):
         self._api_proxy = None
         self._configuration_manager = None
 
-        self.config_api_url_prefix = None
-        self.api_key = None
+        self._config_api_url_prefix = None
+        self._api_key = None
+        self._instance_id = None
+
         self._config_id = None
         self._config_version_id = None
 
@@ -66,17 +68,17 @@ class DeploymentManager(CoreComponent):
             self.get_dependency('ConfigurationManager')
 
         # fetch component settings
-        self.config_api_url_prefix = \
+        self._config_api_url_prefix = \
             Settings.get("configuration", "config_api_url_prefix",
-                fallback="https://api.n.io/v1/instance_configurations")
+                         fallback="https://api.n.io/v1/instance_configurations")
 
         setting_config_id = Settings.get("configuration", "config_id",
-            fallback=None)
+                                         fallback=None)
         self._config_id = Persistence().load("configuration_id",
-                                            default=setting_config_id)
+                                             default=setting_config_id)
         setting_config_version_id = \
             Settings.get("configuration", "config_version_id",
-                fallback=None)
+                         fallback=None)
         self._config_version_id = Persistence().\
             load("configuration_version_id", default=setting_config_version_id)
         
@@ -87,10 +89,11 @@ class DeploymentManager(CoreComponent):
 
         # fetch instance specific settings
         default = Persistence().load("api_key", default=None)
-        self.api_key = NIOEnvironment.get_variable('API_KEY', 
-                                                   default=default)
+        self._api_key = NIOEnvironment.get_variable('API_KEY',
+                                                    default=default)
+        self._instance_id = NIOEnvironment.get_variable('INSTANCE_ID')
 
-        # config autonomy spcific settings
+        # config autonomy specific settings
         self._poll_interval = Settings.getint("configuration",
                                               "config_poll_interval",
                                               fallback=0)
@@ -126,9 +129,9 @@ class DeploymentManager(CoreComponent):
 
         # Poll the product api for the latest config version id
         latest_version_id = \
-            self._api_proxy.get_version(self.config_api_url_prefix,
+            self._api_proxy.get_version(self._config_api_url_prefix,
                                         self.config_id,
-                                        self.api_key)
+                                        self._api_key)
 
         if latest_version_id is None:
             msg = "latest_version_id failure in nio API return"
@@ -139,18 +142,16 @@ class DeploymentManager(CoreComponent):
             latest_version_id.get("instance_configuration_version_id")
         # Update instance with new config version id
         if config_version_id != self.config_version_id:
+            result = self.update_configuration(self._config_api_url_prefix,
+                                               self._instance_id)
             self.config_version_id = config_version_id
-            result = self.update_configuration(self.config_api_url_prefix,
-                                               self.config_id,
-                                               self.config_version_id)
             self.logger.info("Configuration was updated, {}".format(result))
 
-    def update_configuration(self, url_prefix, config_id, config_version_id):
+    def update_configuration(self, url_prefix, instance_id):
         configuration = \
             self._api_proxy.load_configuration(url_prefix,
-                                               config_id,
-                                               config_version_id,
-                                               self.api_key)
+                                               instance_id,
+                                               self._api_key)
         if configuration is None or "configuration_data" not in configuration:
             msg = "configuration_data entry missing in nio API return"
             self.logger.error(msg)
@@ -166,8 +167,7 @@ class DeploymentManager(CoreComponent):
 
     @config_id.setter
     def config_id(self, config_id):
-        self.logger.debug("Configuration ID set to: {}"\
-            .format(config_id))
+        self.logger.debug("Configuration ID set to: {}".format(config_id))
         self._config_id = config_id
         # persist value so that it can be read eventually
         # when component starts again
@@ -180,8 +180,8 @@ class DeploymentManager(CoreComponent):
 
     @config_version_id.setter
     def config_version_id(self, config_version_id):
-        self.logger.debug("Configuration Version ID set to: {}"\
-            .format(config_version_id))
+        self.logger.debug("Configuration Version ID set to: {}".
+                          format(config_version_id))
         self._config_version_id = config_version_id
         # persist value so that it can be read eventually
         # when component starts again
