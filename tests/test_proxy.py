@@ -1,5 +1,4 @@
 from unittest.mock import patch
-from urllib.parse import urlencode
 
 from ..proxy import DeploymentProxy
 
@@ -10,11 +9,12 @@ from nio.testing.test_case import NIOTestCase
 
 class TestDeploymentProxy(NIOTestCase):
 
-    def test_get_version(self):
+    def test_get_instance_config_ids(self):
         proxy = DeploymentProxy()
         with patch("{}.requests".format(DeploymentProxy.__module__)) \
                 as request_patch:
-            proxy.get_version("api", "config_id", "token")
+            proxy.get_instance_config_ids(
+                "api_url_prefix", "my_instance_id", "token")
             headers = proxy._get_headers("token")
 
             test_headers = {
@@ -23,18 +23,38 @@ class TestDeploymentProxy(NIOTestCase):
             }
             self.assertEqual(headers, test_headers)
 
-            desired_url = "api/config_id/versions/latest"
+            desired_url = \
+                "api_url_prefix/instances/my_instance_id/configuration"
             request_patch.get.assert_called_with(desired_url,
                                                  headers=headers)
 
-    def test_load_configuration(self):
+    def test_notify_instance_config_ids(self):
         proxy = DeploymentProxy()
         with patch("{}.requests".format(DeploymentProxy.__module__)) \
                 as request_patch:
-            proxy.load_configuration("api",
-                                     "config_id",
-                                     "config_version_id",
-                                     "token")
+            proxy.notify_instance_config_ids(
+                "api_url_prefix", "my_instance_id",
+                "config_id", "config_version_id", "token")
+            headers = proxy._get_headers("token")
+
+            desired_url = \
+                "api_url_prefix/instances/my_instance_id/configuration"
+            request_patch.post.assert_called_with(
+                desired_url, headers=headers,
+                json={
+                    'reported_configuration_id': 'config_id',
+                    'reported_configuration_version_id': 'config_version_id'
+                }
+            )
+
+    def test_get_configuration(self):
+        proxy = DeploymentProxy()
+        with patch("{}.requests".format(DeploymentProxy.__module__)) \
+                as request_patch:
+            proxy.get_configuration("api",
+                                    "config_id",
+                                    "config_version_id",
+                                    "token")
             headers = proxy._get_headers("token")
 
             test_headers = {

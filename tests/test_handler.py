@@ -3,8 +3,6 @@ from unittest.mock import MagicMock
 from nio.modules.web.http import Request, Response
 from nio.testing.modules.security.module import TestingSecurityModule
 
-from niocore.configuration import CfgType
-
 from ..handler import DeploymentHandler
 
 # noinspection PyProtectedMember
@@ -29,7 +27,6 @@ class TestDeploymentHandler(NIOWebTestCase):
 
     def test_on_put(self):
         config_api_url_prefix = None
-        api_key = None
         config_id = None
         config_version_id = None
         manager = MagicMock(config_api_url_prefix=config_api_url_prefix,
@@ -60,4 +57,3 @@ class TestDeploymentHandler(NIOWebTestCase):
             assert_called_once_with("api",
                                     "config_id",
                                     "config_version_id")
-    
