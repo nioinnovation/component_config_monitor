@@ -40,13 +40,40 @@ class TestDeploymentManager(NIOTestCase):
     def test_update_with_version(self):
         manager = DeploymentManager()
 
+        cfg_id = "cfg_id"
+        cfg_version_id = "cfg_version_id"
+        deployment_id = "dep_id"
+
         manager._api_key = "apikey"
         manager._instance_id = "my_instance_id"
         manager._config_api_url_prefix = "api_url_prefix"
         manager._config_id = "cfg_id"
         manager._config_version_id = "cfg_version_id"
         manager._api_proxy = MagicMock()
-        manager.update_configuration = MagicMock()
+
+        failed_resource_properties = {
+            "id": "resource id",
+            "name": "resource name",
+            "prop": "prop value",
+            "failed_prop": "failed prop value"
+        }
+        update_result = {
+            "services": {
+                "started": [],
+                "stopped": [],
+                "added": [],
+                "modified": [],
+                "ignored": [],
+                "missing": [],
+                "error": [
+                    failed_resource_properties
+                ]
+            },
+            "blocks": {},
+            "blockTypes": {}
+        }
+        manager.update_configuration = MagicMock(
+            return_value = (deployment_id, update_result))
 
         # Test that update isn't called when latest route fails
         manager._api_proxy.get_instance_config_ids.return_value = None
@@ -60,32 +87,52 @@ class TestDeploymentManager(NIOTestCase):
         manager._api_proxy.reset_mock()
         # Test that update isn't called with the same version id
         manager._api_proxy.get_instance_config_ids.return_value = {
-            "instance_configuration_id": "cfg_id",
-            "instance_configuration_version_id": "cfg_version_id"
+            "instance_configuration_id": cfg_id,
+            "instance_configuration_version_id": cfg_version_id,
+            "deployment_id": deployment_id
         }
 
         manager._run_config_update()
         self.assertEqual(
             manager._api_proxy.get_instance_config_ids.call_count, 1)
-        manager._api_proxy.get_instance_config_ids.assert_called_once_with(
-            "api_url_prefix", "my_instance_id", "apikey")
+        manager._api_proxy.get_instance_config_ids.assert_called_once_with()
         self.assertEqual(manager.update_configuration.call_count, 0)
 
         manager._api_proxy.reset_mock()
         # Test update called with a new config version id
+        cfg_version_id = "new_cfg_version_id"
         manager._api_proxy.get_instance_config_ids.return_value = {
-            "instance_configuration_id": "cfg_id",
-            "instance_configuration_version_id": "new_cfg_version_id"
+            "instance_configuration_id": cfg_id,
+            "instance_configuration_version_id": cfg_version_id,
+            "deployment_id": deployment_id
         }
+        # run an update that reports an error
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 1)
         # assert update call
         manager.update_configuration.assert_called_once_with(
-            "cfg_id", "new_cfg_version_id")
+            cfg_id, "new_cfg_version_id")
         # assert api notification
-        manager._api_proxy.notify_instance_config_ids.assert_called_once_with(
-            "api_url_prefix", "my_instance_id",
-            "cfg_id", "new_cfg_version_id", "apikey")
+        expected_message = "Failed to update, these errors were encountered, " \
+                           "Failed to install services, {}".\
+            format(json.dumps(failed_resource_properties))
+        manager._api_proxy.set_reported_configuration.assert_called_once_with(
+            cfg_id, "new_cfg_version_id", deployment_id,
+            DeploymentManager.Status.failed.name,
+            expected_message
+        )
+
+        # clear out error
+        update_result["services"]["error"] = []
+        # run an update with no error
+        manager._run_config_update()
+        self.assertEqual(manager.update_configuration.call_count, 2)
+        success_message = "updated services and blocks"
+        manager._api_proxy.set_reported_configuration.assert_any_call(
+            cfg_id, "new_cfg_version_id", deployment_id,
+            DeploymentManager.Status.success.name,
+            success_message
+        )
 
     def test_update_config(self):
 
@@ -104,11 +151,12 @@ class TestDeploymentManager(NIOTestCase):
         configuration = {
             "blocks": {},
             "services": {},
-            "blockTypes": {},
-            "any_other_data": {}
+            "blockTypes": {}
         }
+        deployment_id = "my_deployment_id"
         manager._api_proxy.get_configuration.return_value = {
-            "configuration_data": json.dumps(configuration)
+            "configuration_data": json.dumps(configuration),
+            "deployment_id": deployment_id
         }
         manager._run_config_update()
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
@@ -129,8 +177,25 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
 
         manager._api_proxy.get_configuration.return_value = {
-            "configuration_data": json.dumps({})
+            "configuration_data": json.dumps({}),
+            "deployment_id": deployment_id
         }
         manager.config_version_id = "cfg_version_id_3"
         manager._run_config_update()
         self.assertEqual(manager._configuration_manager.update.call_count, 2)
+
+    def test_polling(self):
+        """ Assert polling is setup upon start and cleaned up upon stop
+        """
+        manager = DeploymentManager()
+
+        manager._poll_interval = 1
+        rest_manager = MagicMock()
+        rest_manager.add_web_handler = MagicMock()
+        manager._rest_manager = rest_manager
+
+        self.assertIsNone(manager._poll_job)
+        manager.start()
+        self.assertIsNotNone(manager._poll_job)
+        manager.stop()
+        self.assertIsNone(manager._poll_job)
