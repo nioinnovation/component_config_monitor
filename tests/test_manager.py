@@ -69,8 +69,13 @@ class TestDeploymentManager(NIOTestCase):
                     failed_resource_properties
                 ]
             },
-            "blocks": {},
-            "blockTypes": {}
+            "blocks": {
+            },
+            "blockTypes": {
+                "error": [
+                    "Failed to load dependency for block X"
+                ]
+            }
         }
         manager.update_configuration = MagicMock(
             return_value = (deployment_id, update_result))
@@ -114,16 +119,19 @@ class TestDeploymentManager(NIOTestCase):
             cfg_id, "new_cfg_version_id")
         # assert api notification
         expected_message = "Failed to update, these errors were encountered, " \
-                           "Failed to install services, {}".\
-            format(json.dumps(failed_resource_properties))
+                           "Failed to install services, {}," \
+                           "Failed to install blockTypes, {}".\
+            format(json.dumps(failed_resource_properties),
+                   update_result["blockTypes"]["error"][0])
         manager._api_proxy.set_reported_configuration.assert_called_once_with(
             cfg_id, "new_cfg_version_id", deployment_id,
             DeploymentManager.Status.failed.name,
             expected_message
         )
 
-        # clear out error
+        # clear out errors
         update_result["services"]["error"] = []
+        update_result["blockTypes"]["error"] = []
         # run an update with no error
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 2)

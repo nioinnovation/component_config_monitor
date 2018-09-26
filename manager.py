@@ -77,7 +77,7 @@ class DeploymentManager(CoreComponent):
         # fetch component settings
         self._config_api_url_prefix = \
             Settings.get("configuration", "config_api_url_prefix",
-                         fallback="https://api.n.io/v1/instance_configurations")
+                         fallback="https://api.n.io/v1")
 
         self._config_id = Persistence().load(
             "configuration_id",
@@ -215,6 +215,10 @@ class DeploymentManager(CoreComponent):
                 for error in errors:
                     if isinstance(error, dict):
                         message += ", {}".format(json.dumps(error))
+                    # providing API should send errors as dicts but just in
+                    # case it does not, at least attempt to convert to str
+                    else:
+                        message += ", " + str(error)
                 messages.append(message)
                 # do not let errors go unnoticed
                 self.logger.error("{} error: {}".format(key, errors))
