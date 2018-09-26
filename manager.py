@@ -152,26 +152,26 @@ class DeploymentManager(CoreComponent):
             deployment_id, result = \
                 self.update_configuration(config_id,
                                           config_version_id)
+            # instance is now running this configuration so persist this fact
+            self.config_id = config_id
+            self.config_version_id = config_version_id
 
+            # gather and report any possible errors
             error_messages = self._get_potential_errors_messages(result)
             error_count = len(error_messages)
             if error_count:
+                error_messages = ",".join(error_messages)
                 self.logger.error(
-                    "{} errors were encountered during update, configuration "
-                    "version '{}' was not updated to '{}'".format(
-                        error_count, self.config_version_id, config_version_id))
+                    "{} errors were encountered during update, {}".format(
+                        error_count, error_messages))
                 # notify failure
                 self._api_proxy.set_reported_configuration(
                     config_id, config_version_id,
                     deployment_id,
                     self.Status.failed.name,
                     "Failed to update, these errors were encountered, " +
-                    ",".join(error_messages))
+                    error_messages)
                 return
-
-            # successful update then persist new ids
-            self.config_id = config_id
-            self.config_version_id = config_version_id
 
             # report success and new instance config ids
             self._api_proxy.set_reported_configuration(
