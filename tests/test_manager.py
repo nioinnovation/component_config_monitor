@@ -105,7 +105,7 @@ class TestDeploymentManager(NIOTestCase):
 
         manager._api_proxy.reset_mock()
         # Test update called with a new config version id
-        cfg_version_id = "new_cfg_version_id"
+        cfg_version_id = "cfg_version_id1"
         manager._api_proxy.get_instance_config_ids.return_value = {
             "instance_configuration_id": cfg_id,
             "instance_configuration_version_id": cfg_version_id,
@@ -116,7 +116,7 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(manager.update_configuration.call_count, 1)
         # assert update call
         manager.update_configuration.assert_called_once_with(
-            cfg_id, "new_cfg_version_id")
+            cfg_id, cfg_version_id)
         # assert api notification
         expected_message = "Failed to update, these errors were encountered, " \
                            "Failed to install services, {}," \
@@ -124,7 +124,7 @@ class TestDeploymentManager(NIOTestCase):
             format(json.dumps(failed_resource_properties),
                    update_result["blockTypes"]["error"][0])
         manager._api_proxy.set_reported_configuration.assert_called_once_with(
-            cfg_id, "new_cfg_version_id", deployment_id,
+            cfg_id, cfg_version_id, deployment_id,
             DeploymentManager.Status.failed.name,
             expected_message
         )
@@ -132,12 +132,19 @@ class TestDeploymentManager(NIOTestCase):
         # clear out errors
         update_result["services"]["error"] = []
         update_result["blockTypes"]["error"] = []
+        # pretend a new version is being fetched
+        cfg_version_id = "cfg_version_id2"
+        manager._api_proxy.get_instance_config_ids.return_value = {
+            "instance_configuration_id": cfg_id,
+            "instance_configuration_version_id": cfg_version_id,
+            "deployment_id": deployment_id
+        }
         # run an update with no error
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 2)
         success_message = "updated services and blocks"
         manager._api_proxy.set_reported_configuration.assert_any_call(
-            cfg_id, "new_cfg_version_id", deployment_id,
+            cfg_id, cfg_version_id, deployment_id,
             DeploymentManager.Status.success.name,
             success_message
         )
