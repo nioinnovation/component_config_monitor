@@ -22,6 +22,7 @@ class DeploymentProxy(object):
             {
                 "instance_configuration_id": "uuid..",
                 "instance_configuration_version_id": "uuid..",
+                "deployment_id": "deployment_id..."
             }
         """
         url = "{}/instances/{}/configuration".format(
@@ -70,8 +71,7 @@ class DeploymentProxy(object):
                     "version": 1.0.0,
                     "blocks": {...},
                     "services": {...},
-                    "blockTypes": {...},
-                    "deployment_id": "deployment_id..."
+                    "blockTypes": {...}
                 },
                 "message": "Found Instance Configuration...",
                 "status": 200,
