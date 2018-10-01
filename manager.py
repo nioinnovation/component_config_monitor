@@ -44,7 +44,6 @@ class DeploymentManager(CoreComponent):
         self._poll = None
         self._poll_interval = None
 
-        self._configuration_manager = None
         self._start_stop_services = None
         self._delete_missing = None
 
@@ -105,7 +104,7 @@ class DeploymentManager(CoreComponent):
         self._api_proxy = DeploymentProxy()
         self._config_handler = DeploymentHandler(self)
         self._rest_manager.add_web_handler(self._config_handler)
-    
+
         if self._poll_interval:
             self._poll_job = Job(self._run_config_update,
                                  timedelta(seconds=self._poll_interval),
@@ -115,10 +114,10 @@ class DeploymentManager(CoreComponent):
         """ Stops component
         """
         self._rest_manager.remove_web_handler(self._config_handler)
-        
+
         if self._poll_interval:
             self._poll_job.cancel()
-        
+
         super().stop()
 
     def _run_config_update(self):
@@ -140,12 +139,19 @@ class DeploymentManager(CoreComponent):
         # Update instance with new config version id
         if config_version_id != self.config_version_id:
             self.config_version_id = config_version_id
-            result = self.update_configuration(self.config_api_url_prefix,
-                                               self.config_id,
-                                               self.config_version_id)
+            result = self.update_configuration(
+                url_prefix=self.config_api_url_prefix,
+                config_id=self.config_id,
+                config_version_id=self.config_version_id,
+                deployment_mode='indirect',
+            )
             self.logger.info("Configuration was updated, {}".format(result))
 
-    def update_configuration(self, url_prefix, config_id, config_version_id):
+    def update_configuration(self,
+                             url_prefix,
+                             config_id,
+                             config_version_id,
+                             deployment_mode):
         configuration = \
             self._api_proxy.load_configuration(url_prefix,
                                                config_id,
@@ -158,7 +164,11 @@ class DeploymentManager(CoreComponent):
 
         configuration_data = json.loads(configuration["configuration_data"])
         return self._configuration_manager.update(
-            configuration_data, self._start_stop_services, self._delete_missing)
+            configuration=configuration_data,
+            start_stop=self._start_stop_services,
+            delete_missing=self._delete_missing,
+            check_permissions=(deployment_mode == 'direct'),
+        )
 
     @property
     def config_id(self):
@@ -166,8 +176,7 @@ class DeploymentManager(CoreComponent):
 
     @config_id.setter
     def config_id(self, config_id):
-        self.logger.debug("Configuration ID set to: {}"\
-            .format(config_id))
+        self.logger.debug("Configuration ID set to: {}".format(config_id))
         self._config_id = config_id
         # persist value so that it can be read eventually
         # when component starts again
@@ -180,8 +189,8 @@ class DeploymentManager(CoreComponent):
 
     @config_version_id.setter
     def config_version_id(self, config_version_id):
-        self.logger.debug("Configuration Version ID set to: {}"\
-            .format(config_version_id))
+        self.logger.debug("Configuration Version ID set to: {}".format(
+            config_version_id))
         self._config_version_id = config_version_id
         # persist value so that it can be read eventually
         # when component starts again

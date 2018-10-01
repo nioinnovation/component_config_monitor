@@ -72,10 +72,12 @@ class DeploymentHandler(RESTHandler):
             self._manager.config_version_id = instance_configuration_version_id
 
         # get configuration and update running instance
-        result = self._manager.\
-            update_configuration(url_prefix,
-                                 instance_configuration_id,
-                                 instance_configuration_version_id)
+        result = self._manager.update_configuration(
+            url_prefix=url_prefix,
+            config_id=instance_configuration_id,
+            config_version_id=instance_configuration_version_id,
+            deployment_mode='direct',
+        )
         # provide response
         response.set_header('Content-Type', 'application/json')
         response.set_body(json.dumps(result))

@@ -75,7 +75,11 @@ class TestDeploymentManager(NIOTestCase):
         manager._run_config_update()
         self.assertEqual(manager.update_configuration.call_count, 1)
         manager.update_configuration.\
-            assert_called_once_with("api", "cfg_id", "new_cfg_version_id")
+            assert_called_once_with(
+                url_prefix="api",
+                config_id="cfg_id",
+                config_version_id="new_cfg_version_id",
+                deployment_mode="indirect")
 
     def test_update_config(self):
 
@@ -87,7 +91,7 @@ class TestDeploymentManager(NIOTestCase):
         manager.config_api_url_prefix = "api"
         manager.config_id = "cfg_id"
         manager.config_version_id = "cfg_version_id_1"
-        
+
         # Mock methods/dependencies
         manager._api_proxy = MagicMock()
         manager._configuration_manager = MagicMock()
@@ -103,13 +107,14 @@ class TestDeploymentManager(NIOTestCase):
         }
         manager._run_config_update()
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
-        call_args = manager._configuration_manager.update.call_args[0]
-        self.assertDictEqual(call_args[0], configuration)
-        self.assertEqual(call_args[1], True)
-        self.assertEqual(call_args[2], False)
+        manager._configuration_manager.update.assert_called_once_with(
+            configuration=configuration,
+            start_stop=True,
+            delete_missing=False,
+            check_permissions=False)
 
-        # show that component is not tied to any configuration data fields other
-        # than expecting a 'configuration_data' entry
+        # show that component is not tied to any configuration data fields
+        # other than expecting a 'configuration_data' entry
         manager._api_proxy.load_configuration.return_value = {
             "a_field": "a_field_data"
         }
