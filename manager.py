@@ -149,9 +149,9 @@ class DeploymentManager(CoreComponent):
         # Update instance configuration if versions differ
         if config_id != self.config_id or \
            config_version_id != self.config_version_id:
-            deployment_id, result = \
-                self.update_configuration(config_id,
-                                          config_version_id)
+            deployment_id = ids.get("deployment_id")
+            result = self.update_configuration(
+                config_id, config_version_id, deployment_id)
             # instance is now running this configuration so persist this fact
             self.config_id = config_id
             self.config_version_id = config_version_id
@@ -180,7 +180,7 @@ class DeploymentManager(CoreComponent):
                 "updated services and blocks")
             self.logger.info("Configuration was updated, {}".format(result))
 
-    def update_configuration(self, config_id, config_version_id):
+    def update_configuration(self, config_id, config_version_id, deployment_id):
         # grab new configuration
         configuration = \
             self._api_proxy.get_configuration(config_id,
@@ -191,7 +191,6 @@ class DeploymentManager(CoreComponent):
             raise RuntimeError(msg)
 
         configuration_data = json.loads(configuration["configuration_data"])
-        deployment_id = configuration["deployment_id"]
         # notify configuration acceptance
         self._api_proxy.set_reported_configuration(
             config_id, config_version_id, deployment_id,
@@ -203,7 +202,7 @@ class DeploymentManager(CoreComponent):
         result = self._configuration_manager.update(
             configuration_data, self._start_stop_services, self._delete_missing)
 
-        return deployment_id, result
+        return result
 
     def _get_potential_errors_messages(self, result):
         # maintain a list of errors encountered if any

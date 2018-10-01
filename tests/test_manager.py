@@ -78,7 +78,7 @@ class TestDeploymentManager(NIOTestCase):
             }
         }
         manager.update_configuration = MagicMock(
-            return_value = (deployment_id, update_result))
+            return_value = update_result)
 
         # Test that update isn't called when latest route fails
         manager._api_proxy.get_instance_config_ids.return_value = None
@@ -116,7 +116,7 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(manager.update_configuration.call_count, 1)
         # assert update call
         manager.update_configuration.assert_called_once_with(
-            cfg_id, cfg_version_id)
+            cfg_id, cfg_version_id, deployment_id)
         # assert api notification
         expected_message = "Failed to update, these errors were encountered, " \
                            "Failed to install services, {}," \
@@ -168,10 +168,8 @@ class TestDeploymentManager(NIOTestCase):
             "services": {},
             "blockTypes": {}
         }
-        deployment_id = "my_deployment_id"
         manager._api_proxy.get_configuration.return_value = {
-            "configuration_data": json.dumps(configuration),
-            "deployment_id": deployment_id
+            "configuration_data": json.dumps(configuration)
         }
         manager._run_config_update()
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
@@ -192,8 +190,7 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(manager._configuration_manager.update.call_count, 1)
 
         manager._api_proxy.get_configuration.return_value = {
-            "configuration_data": json.dumps({}),
-            "deployment_id": deployment_id
+            "configuration_data": json.dumps({})
         }
         manager.config_version_id = "cfg_version_id_3"
         manager._run_config_update()
