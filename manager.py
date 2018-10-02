@@ -89,7 +89,7 @@ class DeploymentManager(CoreComponent):
         self._start_stop_services = Settings.getboolean(
             "configuration", "start_stop_services", fallback=True)
         self._delete_missing = Settings.getboolean(
-            "configuration", "delete_missing", fallback=False)
+            "configuration", "delete_missing", fallback=True)
 
         # fetch instance specific settings
         self._api_key = Persistence().load(
