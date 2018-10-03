@@ -16,7 +16,7 @@ config_api_url_prefix:
 
 # specifies if existing blocks and services are to be deleted when not found
 # in the incoming configuration
-#delete_missing=False
+#delete_missing=True
 ```
 
 ## Dependencies
