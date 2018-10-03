@@ -23,6 +23,24 @@ A nio component providing functionality to update and/or refresh configuration f
 #delete_missing=True
 ```
 
+## Logging
+
+Add the following loggers to a project's `etc/logging.json` to set the log level of the component:
+```
+  "loggers": {
+    "main": {
+      "level": "NOTSET"
+    },
+    ...,
+    "main.DeploymentManager": {
+      "level": "DEBUG"
+    },
+    "main.DeploymentHandler": {
+      "level": "DEBUG"
+    }
+  }
+```
+
 ## Dependencies
 
 - None
