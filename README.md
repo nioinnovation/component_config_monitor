@@ -27,6 +27,7 @@ A nio component providing functionality to update and/or refresh configuration f
 
 Add the following loggers to a project's `etc/logging.json` to set the log level of the component:
 ```
+  ...,
   "loggers": {
     "main": {
       "level": "NOTSET"
