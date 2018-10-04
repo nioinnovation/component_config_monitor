@@ -44,7 +44,7 @@ class DeploymentManager(CoreComponent):
         self._api_proxy = None
         self._configuration_manager = None
 
-        self.config_api_url_prefix = None
+        self._config_api_url_prefix = None
         self._api_key = None
         self._instance_id = None
 
@@ -78,7 +78,7 @@ class DeploymentManager(CoreComponent):
         self._api_key_manager = self.get_dependency('APIKeyManager')
 
         # fetch component settings
-        self.config_api_url_prefix = \
+        self._config_api_url_prefix = \
             Settings.get("configuration", "config_api_url_prefix",
                          fallback="https://api.n.io/v1")
 
@@ -103,7 +103,7 @@ class DeploymentManager(CoreComponent):
         Begins polling job if it is set
         """
         super().start()
-        self._api_proxy = DeploymentProxy(self.config_api_url_prefix, self)
+        self._api_proxy = DeploymentProxy(self._config_api_url_prefix, self)
         self._config_handler = DeploymentHandler(self)
         self._rest_manager.add_web_handler(self._config_handler)
 
