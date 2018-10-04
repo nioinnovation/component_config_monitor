@@ -1,6 +1,6 @@
-# nio configuration  component
+# nio deployment API component
 
-A nio component providing functionality to update and/or refresh configuration files
+A nio component providing functionality to update and/or refresh instance configuration files
 
 
 ## Configuration
@@ -10,8 +10,8 @@ A nio component providing functionality to update and/or refresh configuration f
 # url to use when requesting a configuration from the Product API
 #config_api_url_prefix=
 
-# for indirect deployments provide a configuration ID and polling interval
-#config_id=
+# for indirect deployments provide a instance ID and polling interval
+#instance_id=
 #config_poll_interval=3600
 
 # specifies if modified services are to be started/stopped based on the
