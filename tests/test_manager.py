@@ -46,8 +46,6 @@ class TestDeploymentManager(NIOTestCase):
         cfg_version_id = "cfg_version_id"
         deployment_id = "dep_id"
 
-        manager._api_key = "apikey"
-        manager._instance_id = "my_instance_id"
         manager._config_api_url_prefix = "api_url_prefix"
         manager._config_id = cfg_id
         manager._config_version_id = cfg_version_id

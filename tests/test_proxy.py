@@ -1,10 +1,9 @@
 from unittest.mock import patch, Mock
+from requests.exceptions import HTTPError
+
+from nio.testing.test_case import NIOTestCase
 
 from ..proxy import DeploymentProxy
-
-
-# noinspection PyProtectedMember
-from nio.testing.test_case import NIOTestCase
 
 
 @patch("{}.requests".format(DeploymentProxy.__module__))
@@ -26,6 +25,20 @@ class TestDeploymentProxy(NIOTestCase):
 
         desired_url = "api_url_prefix/instances/my_instance_id/configuration"
         mock_req.get.assert_called_with(desired_url, headers=expected_headers)
+
+    def test_get_instance_config_errors(self, mock_req):
+        """Tests the behavior when fetching the config ID causes an error"""
+        # A 400 should do nothing, since that's a missing configuration for
+        # the instance
+        mock_resp = Mock()
+        mock_resp.status_code = 400
+        mock_req.get.side_effect = HTTPError(response=mock_resp)
+        self._proxy.get_instance_config_ids()
+
+        # Any non-400 should raise though
+        mock_resp.status_code = 500
+        with self.assertRaises(HTTPError):
+            self._proxy.get_instance_config_ids()
 
     def test_notify_instance_config_ids(self, mock_req):
         cfg_id = "cfg_id"

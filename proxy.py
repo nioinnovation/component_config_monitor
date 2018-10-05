@@ -1,5 +1,5 @@
 import requests
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 
 from nio.util.logging import get_nio_logger
 
@@ -113,7 +113,7 @@ class DeploymentProxy(object):
         }
         try:
             response = fn(url, headers=headers, **kwargs)
-        except requests.exceptions.ConnectionError:  # pragma no cover
+        except ConnectionError:
             self.logger.exception(failed_msg)
         response.raise_for_status()
         return response.json()
