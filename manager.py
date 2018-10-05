@@ -45,9 +45,6 @@ class DeploymentManager(CoreComponent):
         self._configuration_manager = None
 
         self._config_api_url_prefix = None
-        self._api_key = None
-        self._instance_id = None
-
         self._config_id = None
         self._config_version_id = None
 
