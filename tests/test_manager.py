@@ -121,7 +121,7 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(core_updater.call_count, 1)
         manager._api_proxy.set_reported_configuration.assert_called_with(
             cfg_id, cfg_version_id, deployment_id,
-            DeploymentManager.Status.failed.name,
+            DeploymentManager.Status.failure.name,
             ANY)
 
         # clear out errors

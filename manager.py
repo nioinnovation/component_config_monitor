@@ -33,7 +33,7 @@ class DeploymentManager(CoreComponent):
         accepted = 2
         in_progress = 3
         success = 4
-        failed = 5
+        failure = 5
 
     _name = "DeploymentManager"
 
@@ -210,7 +210,7 @@ class DeploymentManager(CoreComponent):
                 config_id,
                 config_version_id,
                 deployment_id,
-                self.Status.failed.name,
+                self.Status.failure.name,
                 "Failed to update, these errors were encountered: {}".format(
                     error_messages))
         else:
