@@ -45,9 +45,6 @@ class DeploymentManager(CoreComponent):
         self._configuration_manager = None
 
         self._config_api_url_prefix = None
-        self._api_key = None
-        self._instance_id = None
-
         self._config_id = None
         self._config_version_id = None
 
@@ -75,6 +72,7 @@ class DeploymentManager(CoreComponent):
         self._rest_manager = self.get_dependency('RESTManager')
         self._configuration_manager = \
             self.get_dependency('ConfigurationManager')
+        self._api_key_manager = self.get_dependency('APIKeyManager')
 
         # fetch component settings
         self._config_api_url_prefix = \
@@ -92,19 +90,8 @@ class DeploymentManager(CoreComponent):
             "configuration", "start_stop_services", fallback=True)
         self._delete_missing = Settings.getboolean(
             "configuration", "delete_missing", fallback=True)
-
-        # fetch instance specific settings
-        self._api_key = Persistence().load(
-            "api_key",
-            default=Settings.get("configuration", "instance_api_key"))
-        self._instance_id = Persistence().load(
-            "instance_id",
-            default=Settings.get("configuration", "instance_id"))
-
-        # config autonomy specific settings
-        self._poll_interval = Settings.getint("configuration",
-                                              "config_poll_interval",
-                                              fallback=0)
+        self._poll_interval = Settings.getint(
+            "configuration", "config_poll_interval", fallback=0)
 
     def start(self):
         """ Starts component
@@ -113,11 +100,10 @@ class DeploymentManager(CoreComponent):
         Begins polling job if it is set
         """
         super().start()
-        self._api_proxy = DeploymentProxy(
-            self._config_api_url_prefix, self._api_key, self._instance_id)
+        self._api_proxy = DeploymentProxy(self._config_api_url_prefix, self)
         self._config_handler = DeploymentHandler(self)
         self._rest_manager.add_web_handler(self._config_handler)
-    
+
         if self._poll_interval:
             self._poll_job = Job(self._run_config_update,
                                  timedelta(seconds=self._poll_interval),
@@ -127,15 +113,24 @@ class DeploymentManager(CoreComponent):
         """ Stops component
         """
         self._rest_manager.remove_web_handler(self._config_handler)
-        
+
         if self._poll_job:
             self._poll_job.cancel()
             self._poll_job = None
-        
+
         super().stop()
+
+    @property
+    def api_key(self):
+        return self._api_key_manager.api_key
+
+    @property
+    def instance_id(self):
+        return self._api_key_manager.instance_id
 
     def _run_config_update(self):
         """Callback function to run update at each polling interval """
+        self.logger.debug("Checking for latest configuration")
         # Assume our current "user" is the core's service account
         set_user(CoreServiceAccount())
 
@@ -143,52 +138,46 @@ class DeploymentManager(CoreComponent):
         # should be running
         ids = self._api_proxy.get_instance_config_ids()
         if ids is None:
-            msg = "Failure to retrieve expected instance version " \
-                  "from nio API return"
-            self.logger.error(msg)
-            raise RuntimeError(msg)
+            # It didn't report any IDs to update to, so ignore
+            return
 
+        self.logger.debug("Desired configuration: {}".format(ids))
         config_id = ids.get("instance_configuration_id")
         config_version_id = ids.get("instance_configuration_version_id")
-        # Update instance configuration if versions differ
-        if config_id != self.config_id or \
-           config_version_id != self.config_version_id:
-            deployment_id = ids.get("deployment_id")
-            result = self.update_configuration(
-                config_id, config_version_id, deployment_id)
-            # instance is now running this configuration so persist this fact
-            self.config_id = config_id
-            self.config_version_id = config_version_id
 
-            # gather and report any possible errors
-            error_messages = self._get_potential_errors_messages(result)
-            error_count = len(error_messages)
-            if error_count:
-                error_messages = ",".join(error_messages)
-                self.logger.error(
-                    "{} errors were encountered during update, {}".format(
-                        error_count, error_messages))
-                # notify failure
-                self._api_proxy.set_reported_configuration(
-                    config_id, config_version_id,
-                    deployment_id,
-                    self.Status.failed.name,
-                    "Failed to update, these errors were encountered, " +
-                    error_messages)
-                return
+        if config_id == self.config_id and \
+           config_version_id == self.config_version_id:
+            self.logger.debug(
+                "No change detected from current version, skipping")
+            return
 
-            # report success and new instance config ids
-            self._api_proxy.set_reported_configuration(
-                config_id, config_version_id, deployment_id,
-                self.Status.success.name,
-                "updated services and blocks")
-            self.logger.info("Configuration was updated, {}".format(result))
+        self.logger.info(
+            "New configuration detected...updating to config ID {} "
+            "version {}".format(config_id, config_version_id))
+        deployment_id = ids.get("deployment_id")
+        result = self.update_configuration(
+            config_id, config_version_id, deployment_id)
 
-    def update_configuration(self, config_id, config_version_id, deployment_id):
+        self.logger.info("Configuration was updated: {}".format(result))
+
+    def update_configuration(
+            self,
+            config_id,
+            config_version_id,
+            deployment_id=None):
+        """ Update this instance to a given config/version ID.
+
+        Args:
+            config_id: The ID of the instance configuration to use
+            config_version_id: The version ID of the instance config
+            deployment_id: The optional deployment ID to set the status for
+
+        Returns:
+            result (dict): The result of the instance update call
+        """
         # grab new configuration
-        configuration = \
-            self._api_proxy.get_configuration(config_id,
-                                              config_version_id)
+        configuration = self._api_proxy.get_configuration(
+            config_id, config_version_id)
         if configuration is None or "configuration_data" not in configuration:
             msg = "configuration_data entry missing in nio API return"
             self.logger.error(msg)
@@ -197,19 +186,47 @@ class DeploymentManager(CoreComponent):
         configuration_data = json.loads(configuration["configuration_data"])
         # notify configuration acceptance
         self._api_proxy.set_reported_configuration(
-            config_id, config_version_id, deployment_id,
+            config_id,
+            config_version_id,
+            deployment_id,
             self.Status.accepted.name,
             "Services and Blocks configuration was accepted, "
             "proceeding with update")
 
         # perform update
         result = self._configuration_manager.update(
-            configuration_data, self._start_stop_services, self._delete_missing)
+            configuration_data,
+            self._start_stop_services,
+            self._delete_missing)
+
+        # instance is now running this configuration so persist this fact
+        self.config_id = config_id
+        self.config_version_id = config_version_id
+
+        error_messages = self._get_potential_errors_messages(result)
+        if error_messages:
+            # notify failure
+            self._api_proxy.set_reported_configuration(
+                config_id,
+                config_version_id,
+                deployment_id,
+                self.Status.failed.name,
+                "Failed to update, these errors were encountered: {}".format(
+                    error_messages))
+        else:
+            # report success and new instance config ids
+            self._api_proxy.set_reported_configuration(
+                config_id,
+                config_version_id,
+                deployment_id,
+                self.Status.success.name,
+                "Successfully updated services and blocks")
+            self.logger.info("Configuration was updated, {}".format(result))
 
         return result
 
     def _get_potential_errors_messages(self, result):
-        # maintain a list of errors encountered if any
+        """Return any error messages contained in a result"""
         messages = []
         for key in result.keys():
             errors = result.get(key, {}).get("error", [])
@@ -226,6 +243,11 @@ class DeploymentManager(CoreComponent):
                 # do not let errors go unnoticed
                 self.logger.error("{} error: {}".format(key, errors))
 
+        messages = ",".join(messages)
+        if messages:
+            self.logger.error(
+                "{} errors were encountered during update: {}".format(
+                    len(messages), messages))
         return messages
 
     @property
@@ -239,8 +261,7 @@ class DeploymentManager(CoreComponent):
             self._config_id = config_id
             # persist value so that it can be read eventually
             # when component starts again
-            Persistence().save(self.config_id,
-                               "configuration_id")
+            Persistence().save(self.config_id, "configuration_id")
 
     @property
     def config_version_id(self):
@@ -254,5 +275,5 @@ class DeploymentManager(CoreComponent):
             self._config_version_id = config_version_id
             # persist value so that it can be read eventually
             # when component starts again
-            Persistence().save(self.config_version_id,
-                               "configuration_version_id")
+            Persistence().save(
+                self.config_version_id, "configuration_version_id")

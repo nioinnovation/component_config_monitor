@@ -12,14 +12,13 @@ from nio.modules.web import RESTHandler
 
 class DeploymentHandler(RESTHandler):
 
-    """ Handler for config component
-    """
+    """ Handler for issuing direct deployments to an instance """
 
     def __init__(self, manager):
         super().__init__('/config/')
 
         self._manager = manager
-        self.logger = get_nio_logger("DeploymentHandler")
+        self.logger = get_nio_logger("DeploymentManager")
 
     def on_get(self, request, response, *args, **kwargs):
         raise NotImplementedError
@@ -45,37 +44,22 @@ class DeploymentHandler(RESTHandler):
         body = request.get_body()
         self.logger.debug("on_put, body: {}".format(body))
 
-        # allow to override gathered settings
-        url_prefix = body.get('url', self._manager.config_api_url_prefix)
-        instance_configuration_id = body.get('instance_configuration_id',
-                                             self._manager.config_id)
+        instance_configuration_id = body.get('instance_configuration_id')
         if instance_configuration_id is None:
             msg = "'instance_configuration_id' is invalid"
-            self.logger.warning(msg)
+            self.logger.error(msg)
             raise ValueError(msg)
 
-        instance_configuration_version_id = \
-            body.get('instance_configuration_version_id',
-                     self._manager.config_version_id)
+        instance_configuration_version_id = body.get(
+            'instance_configuration_version_id')
         if instance_configuration_version_id is None:
             msg = "'instance_configuration_version_id' is invalid"
             self.logger.warning(msg)
             raise ValueError(msg)
 
         # get configuration and update running instance
-        result = self._manager.\
-            update_configuration(url_prefix,
-                                 instance_configuration_id,
-                                 instance_configuration_version_id)
-        # Persist the new ids for this instance
-        self._manager.config_id = instance_configuration_id
-        self._manager.config_version_id = instance_configuration_version_id
-
-        # notify product api about new instance config ids
-        self._manager._api_proxy.notify_instance_config_ids(
-            url_prefix, self._manager._instance_id,
-            instance_configuration_id, instance_configuration_version_id,
-            self._manager._api_key)
+        result = self._manager.update_configuration(
+            instance_configuration_id, instance_configuration_version_id)
 
         # provide response
         response.set_header('Content-Type', 'application/json')

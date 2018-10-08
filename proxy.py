@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import HTTPError, ConnectionError
 
 from nio.util.logging import get_nio_logger
 
@@ -7,13 +8,12 @@ class DeploymentProxy(object):
     """ Serves as a Proxy to make Product API configuration requests
     """
 
-    def __init__(self, url_prefix, api_key, instance_id):
+    def __init__(self, url_prefix, manager):
         super().__init__()
-        self.logger = get_nio_logger("ConfigProxy")
+        self.logger = get_nio_logger("DeploymentManager")
 
         self._url_prefix = url_prefix
-        self._api_key = api_key
-        self._instance_id = instance_id
+        self._manager = manager
 
     def get_instance_config_ids(self):
         """ Gets the conf id and conf version id the instance should be running
@@ -26,36 +26,56 @@ class DeploymentProxy(object):
             }
         """
         url = "{}/instances/{}/configuration".format(
-            self._url_prefix, self._instance_id)
-        return self._request(
-            requests.get, url, self._api_key,
-            "Failed to get configuration version the instance "
-            "should be running")
+            self._url_prefix, self._manager.instance_id)
+        try:
+            return self._request(
+                fn=requests.get,
+                url=url,
+                failed_msg=("Failed to get configuration version the instance "
+                            "should be running")
+            )
+        except HTTPError as e:
+            if e.response.status_code == 400:
+                # This likely indicates that no desired configuration was
+                # found for this particular instance ID, nothing to cause alarm
+                self.logger.info(e.response.json().get("message"))
+            else:
+                raise
 
-    def set_reported_configuration(self, config_id, config_version_id,
-                                   deployment_id, status, message):
+    def set_reported_configuration(
+            self,
+            config_id,
+            config_version_id,
+            deployment_id=None,
+            status="",
+            message=""):
         """ Posts instance config ids and status
 
         Args:
             config_id (str): instance configuration id
             config_version_id (str): instance configuration version id
-            deployment_id (str): deployment id
+            deployment_id (str): Optional deployment id that the status
+                and message belongs to
             status (str): deployment status
             message (str): deployment message
         """
 
         url = "{}/instances/{}/configuration".format(
-            self._url_prefix, self._instance_id)
+            self._url_prefix, self._manager.instance_id)
+        body = {
+            "reported_configuration_id": config_id,
+            "reported_configuration_version_id": config_version_id,
+            "status": status,
+            "message": message,
+        }
+        if deployment_id is not None:
+            body["deployment_id"] = deployment_id
         return self._request(
-            requests.post, url, self._api_key,
-            "Failed to post new configuration version instance is running",
-            json={
-                "reported_configuration_id": config_id,
-                "reported_configuration_version_id": config_version_id,
-                "deployment_id": deployment_id,
-                "status": status,
-                "message": message
-            }
+            fn=requests.post,
+            url=url,
+            failed_msg=("Failed to post new configuration version "
+                        "instance is running"),
+            json=body
         )
 
     def get_configuration(self, config_id, config_version_id):
@@ -82,28 +102,18 @@ class DeploymentProxy(object):
         url = "{}/instance_configurations/{}/versions/{}".format(
             self._url_prefix, config_id, config_version_id)
         return self._request(
-            requests.get, url, self._api_key,
-            "Failed to get instance configuration")
+            fn=requests.get,
+            url=url,
+            failed_msg="Failed to get instance configuration")
 
-    def _request(self, fn, url, api_key, failed_msg, **kwargs):
-        try:
-            response = fn(
-                url,
-                headers=self._get_headers(api_key),
-                **kwargs
-            )
-            response.raise_for_status()
-            if response.ok:
-                try:
-                    return response.json()
-                except ValueError:  # pragma no cover
-                    return None
-        except requests.exceptions.ConnectionError:  # pragma no cover
-            self.logger.exception(failed_msg)
-
-    @staticmethod
-    def _get_headers(api_key):
-        return {
-            "authorization": "apikey {}".format(api_key),
+    def _request(self, fn, url, failed_msg, **kwargs):
+        headers = {
+            "authorization": "apikey {}".format(self._manager.api_key),
             "content-type": "application/json"
         }
+        try:
+            response = fn(url, headers=headers, **kwargs)
+        except ConnectionError:
+            self.logger.exception(failed_msg)
+        response.raise_for_status()
+        return response.json()

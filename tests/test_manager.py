@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, ANY
 
 from nio.modules.web import RESTHandler
 from niocore.core.context import CoreContext
@@ -39,16 +39,16 @@ class TestDeploymentManager(NIOTestCase):
 
     def test_update_with_version(self):
         manager = DeploymentManager()
+        manager._configuration_manager = MagicMock()
+        core_updater = manager._configuration_manager.update
 
         cfg_id = "cfg_id"
         cfg_version_id = "cfg_version_id"
         deployment_id = "dep_id"
 
-        manager._api_key = "apikey"
-        manager._instance_id = "my_instance_id"
         manager._config_api_url_prefix = "api_url_prefix"
-        manager._config_id = "cfg_id"
-        manager._config_version_id = "cfg_version_id"
+        manager._config_id = cfg_id
+        manager._config_version_id = cfg_version_id
         manager._api_proxy = MagicMock()
 
         failed_resource_properties = {
@@ -77,18 +77,23 @@ class TestDeploymentManager(NIOTestCase):
                 ]
             }
         }
-        manager.update_configuration = MagicMock(
-            return_value = update_result)
+        core_updater.return_value = update_result
+        manager._api_proxy.get_configuration.return_value = {
+            "configuration_data": json.dumps({
+                "blocks": {},
+                "services": {},
+                "blockTypes": {},
+            })
+        }
 
         # Test that update isn't called when latest route fails
         manager._api_proxy.get_instance_config_ids.return_value = None
 
-        with self.assertRaises(RuntimeError):
-            manager._run_config_update()
-            self.assertEqual(
-                manager._api_proxy.get_instance_config_ids.call_count, 1)
-            self.assertEqual(manager.update_configuration.call_count, 0)
-        
+        manager._run_config_update()
+        self.assertEqual(
+            manager._api_proxy.get_instance_config_ids.call_count, 1)
+        self.assertEqual(core_updater.call_count, 0)
+
         manager._api_proxy.reset_mock()
         # Test that update isn't called with the same version id
         manager._api_proxy.get_instance_config_ids.return_value = {
@@ -101,7 +106,7 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(
             manager._api_proxy.get_instance_config_ids.call_count, 1)
         manager._api_proxy.get_instance_config_ids.assert_called_once_with()
-        self.assertEqual(manager.update_configuration.call_count, 0)
+        self.assertEqual(core_updater.call_count, 0)
 
         manager._api_proxy.reset_mock()
         # Test update called with a new config version id
@@ -113,21 +118,11 @@ class TestDeploymentManager(NIOTestCase):
         }
         # run an update that reports an error
         manager._run_config_update()
-        self.assertEqual(manager.update_configuration.call_count, 1)
-        # assert update call
-        manager.update_configuration.assert_called_once_with(
-            cfg_id, cfg_version_id, deployment_id)
-        # assert api notification
-        expected_message = "Failed to update, these errors were encountered, " \
-                           "Failed to install services, {}," \
-                           "Failed to install blockTypes, {}".\
-            format(json.dumps(failed_resource_properties),
-                   update_result["blockTypes"]["error"][0])
-        manager._api_proxy.set_reported_configuration.assert_called_once_with(
+        self.assertEqual(core_updater.call_count, 1)
+        manager._api_proxy.set_reported_configuration.assert_called_with(
             cfg_id, cfg_version_id, deployment_id,
             DeploymentManager.Status.failed.name,
-            expected_message
-        )
+            ANY)
 
         # clear out errors
         update_result["services"]["error"] = []
@@ -141,12 +136,11 @@ class TestDeploymentManager(NIOTestCase):
         }
         # run an update with no error
         manager._run_config_update()
-        self.assertEqual(manager.update_configuration.call_count, 2)
-        success_message = "updated services and blocks"
+        self.assertEqual(core_updater.call_count, 2)
         manager._api_proxy.set_reported_configuration.assert_any_call(
             cfg_id, cfg_version_id, deployment_id,
             DeploymentManager.Status.success.name,
-            success_message
+            ANY
         )
 
     def test_update_config(self):
@@ -158,7 +152,7 @@ class TestDeploymentManager(NIOTestCase):
         manager._delete_missing = False
         manager._config_id = "cfg_id"
         manager._config_version_id = "cfg_version_id_1"
-        
+
         # Mock methods/dependencies
         manager._api_proxy = MagicMock()
         manager._configuration_manager = MagicMock()
@@ -178,8 +172,8 @@ class TestDeploymentManager(NIOTestCase):
         self.assertEqual(call_args[1], True)
         self.assertEqual(call_args[2], False)
 
-        # show that component is not tied to any configuration data fields other
-        # than expecting a 'configuration_data' entry
+        # show that component is not tied to any configuration data fields
+        # other than expecting a 'configuration_data' entry
         manager._api_proxy.get_configuration.return_value = {
             "a_field": "a_field_data"
         }
