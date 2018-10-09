@@ -28,10 +28,10 @@ class TestDeploymentProxy(NIOTestCase):
 
     def test_get_instance_config_errors(self, mock_req):
         """Tests the behavior when fetching the config ID causes an error"""
-        # A 400 should do nothing, since that's a missing configuration for
+        # A 404 should do nothing, since that's a missing configuration for
         # the instance
         mock_resp = Mock()
-        mock_resp.status_code = 400
+        mock_resp.status_code = 404
         mock_req.get.side_effect = HTTPError(response=mock_resp)
         self._proxy.get_instance_config_ids()
 
@@ -63,32 +63,6 @@ class TestDeploymentProxy(NIOTestCase):
                 'reported_configuration_id': cfg_id,
                 'reported_configuration_version_id': cfg_version_id,
                 'deployment_id': deployment_id,
-                'status': status,
-                'message': message
-            }
-        )
-
-    def test_notify_instance_config_ids_without_deployment(self, mock_req):
-        cfg_id = "cfg_id"
-        cfg_version_id = "cfg_version_id"
-        status = "status"
-        message = "message"
-        expected_headers = {
-            "authorization": "apikey token",
-            "content-type": "application/json"
-        }
-
-        self._proxy.set_reported_configuration(
-            cfg_id, cfg_version_id, None, status, message)
-
-        desired_url = \
-            "api_url_prefix/instances/my_instance_id/configuration"
-        mock_req.post.assert_called_with(
-            desired_url,
-            headers=expected_headers,
-            json={
-                'reported_configuration_id': cfg_id,
-                'reported_configuration_version_id': cfg_version_id,
                 'status': status,
                 'message': message
             }

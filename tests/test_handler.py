@@ -36,12 +36,13 @@ class TestDeploymentHandler(NIOWebTestCase):
         mock_req = MagicMock(spec=Request)
         mock_req.get_identifier.return_value = 'update'
         mock_req.get_body.return_value = {
+            "deployment_id": "deployment_id",
             "instance_configuration_id": "config_id",
             "instance_configuration_version_id": "config_version_id",
         }
         self._handler.on_put(mock_req, MagicMock())
         self._manager.update_configuration.assert_called_once_with(
-            "config_id", "config_version_id")
+            "config_id", "config_version_id", "deployment_id")
 
     def test_on_put_bad_body(self):
         """ Verify an error is raised with incorrect put body """

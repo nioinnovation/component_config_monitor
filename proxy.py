@@ -35,18 +35,21 @@ class DeploymentProxy(object):
                             "should be running")
             )
         except HTTPError as e:
-            if e.response.status_code == 400:
+            if e.response.status_code == 404:
                 # This likely indicates that no desired configuration was
                 # found for this particular instance ID, nothing to cause alarm
                 self.logger.info(e.response.json().get("message"))
             else:
+                self.logger.error("Error fetching instance config: {}".format(
+                    e.response.json().get(
+                        "message", "No error message provided")))
                 raise
 
     def set_reported_configuration(
             self,
             config_id,
             config_version_id,
-            deployment_id=None,
+            deployment_id,
             status="",
             message=""):
         """ Posts instance config ids and status
@@ -54,7 +57,7 @@ class DeploymentProxy(object):
         Args:
             config_id (str): instance configuration id
             config_version_id (str): instance configuration version id
-            deployment_id (str): Optional deployment id that the status
+            deployment_id (str): Deployment id that the status
                 and message belongs to
             status (str): deployment status
             message (str): deployment message
@@ -65,11 +68,10 @@ class DeploymentProxy(object):
         body = {
             "reported_configuration_id": config_id,
             "reported_configuration_version_id": config_version_id,
+            "deployment_id": deployment_id,
             "status": status,
             "message": message,
         }
-        if deployment_id is not None:
-            body["deployment_id"] = deployment_id
         return self._request(
             fn=requests.post,
             url=url,
