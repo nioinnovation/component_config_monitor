@@ -45,21 +45,24 @@ class DeploymentHandler(RESTHandler):
         self.logger.debug("on_put, body: {}".format(body))
 
         instance_configuration_id = body.get('instance_configuration_id')
-        if instance_configuration_id is None:
-            msg = "'instance_configuration_id' is invalid"
-            self.logger.error(msg)
-            raise ValueError(msg)
-
         instance_configuration_version_id = body.get(
             'instance_configuration_version_id')
-        if instance_configuration_version_id is None:
-            msg = "'instance_configuration_version_id' is invalid"
-            self.logger.warning(msg)
+        deployment_id = body.get('deployment_id')
+
+        if not (instance_configuration_id and
+                instance_configuration_version_id and
+                deployment_id):
+            msg = ("Invalid body: configuration ID, version ID, and deployment"
+                   " ID are all required")
+            self.logger.error(msg)
             raise ValueError(msg)
 
         # get configuration and update running instance
         result = self._manager.update_configuration(
-            instance_configuration_id, instance_configuration_version_id)
+            instance_configuration_id,
+            instance_configuration_version_id,
+            deployment_id,
+        )
 
         # provide response
         response.set_header('Content-Type', 'application/json')
