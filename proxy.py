@@ -35,11 +35,14 @@ class DeploymentProxy(object):
                             "should be running")
             )
         except HTTPError as e:
-            if e.response.status_code == 400:
+            if e.response.status_code == 404:
                 # This likely indicates that no desired configuration was
                 # found for this particular instance ID, nothing to cause alarm
                 self.logger.info(e.response.json().get("message"))
             else:
+                self.logger.error("Error fetching instance config: {}".format(
+                    e.response.json().get(
+                        "message", "No error message provided")))
                 raise
 
     def set_reported_configuration(

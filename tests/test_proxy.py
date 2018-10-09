@@ -28,10 +28,10 @@ class TestDeploymentProxy(NIOTestCase):
 
     def test_get_instance_config_errors(self, mock_req):
         """Tests the behavior when fetching the config ID causes an error"""
-        # A 400 should do nothing, since that's a missing configuration for
+        # A 404 should do nothing, since that's a missing configuration for
         # the instance
         mock_resp = Mock()
-        mock_resp.status_code = 400
+        mock_resp.status_code = 404
         mock_req.get.side_effect = HTTPError(response=mock_resp)
         self._proxy.get_instance_config_ids()
 
