@@ -46,7 +46,7 @@ class DeploymentProxy(object):
             self,
             config_id,
             config_version_id,
-            deployment_id=None,
+            deployment_id,
             status="",
             message=""):
         """ Posts instance config ids and status
@@ -54,7 +54,7 @@ class DeploymentProxy(object):
         Args:
             config_id (str): instance configuration id
             config_version_id (str): instance configuration version id
-            deployment_id (str): Optional deployment id that the status
+            deployment_id (str): Deployment id that the status
                 and message belongs to
             status (str): deployment status
             message (str): deployment message
@@ -65,11 +65,10 @@ class DeploymentProxy(object):
         body = {
             "reported_configuration_id": config_id,
             "reported_configuration_version_id": config_version_id,
+            "deployment_id": deployment_id,
             "status": status,
             "message": message,
         }
-        if deployment_id is not None:
-            body["deployment_id"] = deployment_id
         return self._request(
             fn=requests.post,
             url=url,

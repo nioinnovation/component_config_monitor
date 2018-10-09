@@ -161,16 +161,13 @@ class DeploymentManager(CoreComponent):
         self.logger.info("Configuration was updated: {}".format(result))
 
     def update_configuration(
-            self,
-            config_id,
-            config_version_id,
-            deployment_id=None):
+            self, config_id, config_version_id, deployment_id):
         """ Update this instance to a given config/version ID.
 
         Args:
             config_id: The ID of the instance configuration to use
             config_version_id: The version ID of the instance config
-            deployment_id: The optional deployment ID to set the status for
+            deployment_id: The deployment ID to set the status for
 
         Returns:
             result (dict): The result of the instance update call
