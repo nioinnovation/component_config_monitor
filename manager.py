@@ -11,8 +11,6 @@ from nio.util.versioning.dependency import DependsOn
 from nio import discoverable
 
 from nio.modules.settings import Settings
-from nio.modules.security import CoreServiceAccount
-from nio.modules.security.access import set_user
 from nio.modules.persistence import Persistence
 from nio.modules.scheduler.job import Job
 
@@ -131,8 +129,6 @@ class DeploymentManager(CoreComponent):
     def _run_config_update(self):
         """Callback function to run update at each polling interval """
         self.logger.debug("Checking for latest configuration")
-        # Assume our current "user" is the core's service account
-        set_user(CoreServiceAccount())
 
         # Poll the product api for config ids this instance
         # should be running
