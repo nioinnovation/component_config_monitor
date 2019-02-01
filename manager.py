@@ -236,12 +236,12 @@ class DeploymentManager(CoreComponent):
                 # do not let errors go unnoticed
                 self.logger.error("{} error: {}".format(key, errors))
 
-        messages = ",".join(messages)
+        str_messages = ",".join(messages)
         if messages:
             self.logger.error(
                 "{} errors were encountered during update: {}".format(
-                    len(messages), messages))
-        return messages
+                    len(messages), str_messages))
+        return str_messages
 
     @property
     def config_id(self):
