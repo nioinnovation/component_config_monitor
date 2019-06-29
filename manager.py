@@ -49,8 +49,8 @@ class DeploymentManager(CoreComponent):
         self._poll_job = None
         self._poll = None
         self._poll_interval = None
+        self._poll_on_start = None
 
-        self._configuration_manager = None
         self._start_stop_services = None
         self._delete_missing = None
 
@@ -90,6 +90,8 @@ class DeploymentManager(CoreComponent):
             "configuration", "delete_missing", fallback=True)
         self._poll_interval = Settings.getint(
             "configuration", "config_poll_interval", fallback=0)
+        self._poll_on_start = Settings.getboolean(
+            "configuration", "config_poll_on_start", fallback=False)
 
     def start(self):
         """ Starts component
@@ -106,6 +108,8 @@ class DeploymentManager(CoreComponent):
             self._poll_job = Job(self._run_config_update,
                                  timedelta(seconds=self._poll_interval),
                                  True)
+        if self._poll_on_start:
+            self._run_config_update()
 
     def stop(self):
         """ Stops component
