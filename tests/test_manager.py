@@ -213,13 +213,8 @@ class TestDeploymentManager(NIOTestCase):
         manager = DeploymentManager()
         manager.get_dependency = MagicMock(return_value=rest_manager)
 
-        rest_manager = MagicMock()
-        rest_manager.add_web_handler = MagicMock()
-        manager._rest_manager = rest_manager
-
-        context = CoreContext([], [])
         with patch("nio.modules.settings.Settings.get"):
-            manager.configure(context)
+            manager.configure(CoreContext([], []))
             manager._poll_on_start = True
 
         with patch(manager.__module__ + '.DeploymentProxy') as mock_api:
