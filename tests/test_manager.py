@@ -205,3 +205,28 @@ class TestDeploymentManager(NIOTestCase):
         self.assertIsNotNone(manager._poll_job)
         manager.stop()
         self.assertIsNone(manager._poll_job)
+
+    def test_poll_on_start(self):
+        """ Test optional polling on start
+        """
+        rest_manager = MagicMock()
+        manager = DeploymentManager()
+        manager.get_dependency = MagicMock(return_value=rest_manager)
+
+        with patch("nio.modules.settings.Settings.get"):
+            manager.configure(CoreContext([], []))
+            manager._poll_on_start = True
+
+        with patch(manager.__module__ + '.DeploymentProxy') as mock_api:
+            configuration = {
+                "blocks": {},
+                "services": {},
+                "blockTypes": {},
+            }
+            mock_api.return_value.get_configuration.return_value = {
+                "configuration_data": json.dumps(configuration),
+            }
+            manager.start()
+        self.assertIsNone(manager._poll_job)
+        self.assertEqual(manager._configuration_manager.update.call_count, 1)
+        manager.stop()
